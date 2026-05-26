@@ -1409,35 +1409,55 @@ function drawBarLabels(chart) {
 // PATRIMONIO
 // ══════════════════════════════════════════════════════
 function renderPat() {
-  const totS = db.saldi.reduce((s,x) => s + (parseFloat(x.val)||0), 0);
-  const totC = db.crediti.reduce((s,x) => s + (parseFloat(x.val)||0), 0);
-  const totM = db.macchine.reduce((s,m) => s + (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0), 0);
+  const CURR = ['AED','EUR','USD'];
+  const CSYM = {AED:'AED ',EUR:'€ ',USD:'$ '};
+  const CBADGE = {AED:'aed',EUR:'eur',USD:'usd'};
 
-  // Da incassare: fatture parziali o in attesa
-  const fatDaInc = (db.fatture||[]).filter(f => f.stato === 'attesa' || f.stato === 'parziale');
-  const totDaInc = fatDaInc.reduce((s,f) => {
-    if (f.stato === 'attesa') return s + (parseFloat(f.importo)||0);
-    if (f.stato === 'parziale') return s + (parseFloat(f.importo)||0) - (parseFloat(f.acconto)||0);
+  // Totals per currency for saldi
+  const totSbyCurr = {};
+  CURR.forEach(c => { totSbyCurr[c] = db.saldi.filter(x=>(x.currency||'AED')===c).reduce((s,x)=>s+(parseFloat(x.val)||0),0); });
+
+  // Totals per currency for crediti
+  const totCbyCurr = {};
+  CURR.forEach(c => { totCbyCurr[c] = db.crediti.filter(x=>(x.currency||'AED')===c).reduce((s,x)=>s+(parseFloat(x.val)||0),0); });
+
+  // Stock per currency
+  const totMbyCurr = {};
+  CURR.forEach(c => { totMbyCurr[c] = db.macchine.filter(m=>(m.currency||'AED')===c).reduce((s,m)=>s+(parseFloat(m.acq)||0)+(parseFloat(m.spe)||0),0); });
+
+  // Da incassare
+  const fatDaInc = (db.fatture||[]).filter(f=>f.stato==='attesa'||f.stato==='parziale');
+  const totDaInc = fatDaInc.reduce((s,f)=>{
+    if(f.stato==='attesa') return s+(parseFloat(f.importo)||0);
+    if(f.stato==='parziale') return s+(parseFloat(f.importo)||0)-(parseFloat(f.acconto)||0);
     return s;
-  }, 0);
+  },0);
 
-  const grand = totS + totC + totM + totDaInc;
+  const fv = (v, curr) => {
+    const n = parseFloat(v);
+    if (!n) return '—';
+    return (CSYM[curr]||'')+n.toLocaleString('it-IT',{maximumFractionDigits:1})+'k';
+  };
 
-  function patRow(voce, val, id, type) {
+  function patRow(voce, val, id, type, currency) {
+    const curr = currency || 'AED';
     const isNeg = parseFloat(val) < 0;
     return `<div class="pat-edit-row">
       <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
         <button class="pat-del-btn" onclick="delete${type}('${id}')" title="Rimuovi">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </button>
+        <span class="curr-badge ${CBADGE[curr]}" style="font-size:.6rem;padding:1px 6px">${curr}</span>
         <span class="pl" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${voce}</span>
       </div>
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-        <span style="color:var(--muted);font-size:.75rem">€</span>
         <input class="pat-edit-input${isNeg?' neg':''}" type="number" value="${val}" step="0.5"
           inputmode="decimal" onchange="update${type}('${id}',this.value)"
           style="${isNeg?'color:var(--red)':''}">
         <span style="color:var(--muted);font-size:.75rem">k</span>
+        <select onchange="update${type}Curr('${id}',this.value)" style="border:none;background:transparent;font-size:.7rem;font-weight:700;color:var(--muted);outline:none;cursor:pointer;-webkit-appearance:none;padding-left:2px">
+          ${CURR.map(c=>`<option value="${c}" ${curr===c?'selected':''}>${c}</option>`).join('')}
+        </select>
       </div>
     </div>`;
   }
@@ -1447,86 +1467,93 @@ function renderPat() {
   // ── LIQUIDITÀ ──
   html += `<div class="sec-title" style="margin-top:4px">💳 Liquidità</div>
   <div class="pat-card">
-    ${db.saldi.map(s => patRow(s.voce, s.val, s.id, 'Saldo')).join('')}
-    <div class="pat-row tot"><div class="pl b">Totale Liquidità</div><div class="pv acc">${fmtK(totS)}</div></div>
+    ${db.saldi.map(s => patRow(s.voce, s.val, s.id, 'Saldo', s.currency)).join('')}
+    <div class="pat-row tot">
+      <div class="pl b">Totale Liquidità</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        ${CURR.filter(c=>totSbyCurr[c]!==0).map(c=>`<span style="font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:800;color:var(--orange)">${fv(totSbyCurr[c],c)}</span>`).join('') || '<span class="pv acc">—</span>'}
+      </div>
+    </div>
     <button class="pat-add-btn" onclick="addSaldo()">Aggiungi voce</button>
   </div>`;
 
   // ── CREDITI ──
   html += `<div class="sec-title">📋 Crediti Vari</div>
   <div class="pat-card">
-    ${db.crediti.map(c => patRow(c.voce, c.val, c.id, 'Credito')).join('')}
-    <div class="pat-row tot"><div class="pl b">Totale Crediti</div><div class="pv acc">${fmtK(totC)}</div></div>
+    ${db.crediti.map(c => patRow(c.voce, c.val, c.id, 'Credito', c.currency)).join('')}
+    <div class="pat-row tot">
+      <div class="pl b">Totale Crediti</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        ${CURR.filter(c=>totCbyCurr[c]!==0).map(c=>`<span style="font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:800;color:var(--orange)">${fv(totCbyCurr[c],c)}</span>`).join('') || '<span class="pv acc">—</span>'}
+      </div>
+    </div>
     <button class="pat-add-btn" onclick="addCredito()">Aggiungi credito</button>
   </div>`;
 
-  // ── DA INCASSARE (fatture parziali/attesa) ──
+  // ── DA INCASSARE ──
   if (fatDaInc.length > 0) {
     html += `<div class="sec-title">⏳ Da Incassare</div>
     <div class="pat-card">
       ${fatDaInc.map(f => {
-        const resto = f.stato==='parziale'
-          ? (parseFloat(f.importo)||0) - (parseFloat(f.acconto)||0)
-          : (parseFloat(f.importo)||0);
+        const resto = f.stato==='parziale'?(parseFloat(f.importo)||0)-(parseFloat(f.acconto)||0):(parseFloat(f.importo)||0);
+        const fc = f.currency||'AED';
         return `<div class="pat-row">
           <div>
             <div class="pl">${f.nr} — ${f.cliente||'—'}</div>
             ${f.modello?`<div style="font-size:.7rem;color:var(--muted)">🚜 ${f.modello}</div>`:''}
-            ${f.stato==='parziale'?`<div style="font-size:.7rem;color:#b8860b">Acconto ricevuto: ${fmtK(parseFloat(f.acconto)||0)}</div>`:''}
           </div>
-          <div class="pv" style="color:var(--red)">${fmtK(resto)}</div>
+          <div class="pv" style="color:var(--red)">${fv(resto,fc)}</div>
         </div>`;
       }).join('')}
-      <div class="pat-row tot"><div class="pl b">Totale da incassare</div><div class="pv" style="color:var(--red)">${fmtK(totDaInc)}</div></div>
+      <div class="pat-row tot"><div class="pl b">Totale da incassare</div><div class="pv" style="color:var(--red)">${fv(totDaInc,'AED')}</div></div>
     </div>`;
   }
 
   // ── STOCK ──
   html += `<div class="sec-title">🚜 Valore Stock</div>
   <div class="pat-card">
+    ${CURR.filter(c=>totMbyCurr[c]>0).map(c=>`
     <div class="pat-row">
-      <div class="pl">Macchine attive (${db.macchine.length})</div>
-      <div class="pv acc">${fmtK(totM)}</div>
-    </div>
+      <div class="pl"><span class="curr-badge ${CBADGE[c]}" style="font-size:.6rem;padding:1px 6px;margin-right:4px">${c}</span>Macchine ${c}</div>
+      <div class="pv acc">${fv(totMbyCurr[c],c)}</div>
+    </div>`).join('') || '<div class="pat-row"><div class="pl" style="color:var(--muted)">Nessuna macchina</div><div class="pv">—</div></div>'}
   </div>`;
 
-  // ── GRAND TOTAL ──
-  html += `<div class="grand-box" style="margin-top:12px">
-    <div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;color:#b8860b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px">Patrimonio Totale</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:var(--orange);line-height:1">${fmtK(grand)}</div>
-    </div>
-    <div style="text-align:right;font-size:.75rem;color:var(--muted);line-height:1.7">
-      <div>Liquidità: ${fmtK(totS)}</div>
-      <div>Crediti: ${fmtK(totC)}</div>
-      ${totDaInc>0?`<div style="color:var(--red)">Da incassare: ${fmtK(totDaInc)}</div>`:''}
-      <div>Stock: ${fmtK(totM)}</div>
+  // ── GRAND TOTAL per currency ──
+  const allCurrencies = CURR.filter(c => (totSbyCurr[c]||0)+(totCbyCurr[c]||0)+(totMbyCurr[c]||0) !== 0);
+  html += `<div class="grand-box" style="margin-top:12px;flex-direction:column;gap:8px;align-items:stretch">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;color:#b8860b;letter-spacing:1.5px;text-transform:uppercase">💎 Patrimonio Totale</div>
+    <div style="display:grid;grid-template-columns:repeat(${Math.max(allCurrencies.length,1)},1fr);gap:10px">
+      ${allCurrencies.length > 0 ? allCurrencies.map(c => {
+        const tot = (totSbyCurr[c]||0)+(totCbyCurr[c]||0)+(totMbyCurr[c]||0);
+        return `<div style="text-align:center">
+          <div style="font-size:.65rem;font-weight:800;letter-spacing:1px;color:var(--muted);margin-bottom:2px">${c}</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;color:var(--orange);line-height:1">${fv(tot,c)}</div>
+        </div>`;
+      }).join('') : `<div style="text-align:center;color:var(--muted);font-size:.9rem">—</div>`}
     </div>
   </div>`;
-
 
   // ── STORICO ──
   const hist = db.patrimHistory ? db.patrimHistory.slice().reverse() : [];
   html += `<div class="sec-title" style="margin-top:20px">📊 Storico Patrimonio</div>`;
   if (hist.length === 0) {
     html += `<div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;color:var(--muted);font-size:.85rem;box-shadow:var(--shadow)">
-      Il primo snapshot verrà salvato automaticamente<br>nei giorni feriali alle 19:00
+      Il primo snapshot verrà salvato automaticamente nei giorni feriali alle 19:00
     </div>`;
   } else {
     html += `<div class="pat-card" style="overflow:hidden">`;
-    hist.forEach((h, i) => {
+    hist.forEach((h,i) => {
       const d = new Date(h.date);
       const label = d.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit'});
-      const isFirst = i === 0;
-      const tot = h.totale || (h.liq + h.stock + (h.daInc||0) + (h.cred||0));
+      const isFirst = i===0;
+      const tot = h.totale||(h.liq+h.stock+(h.daInc||0)+(h.cred||0));
       html += `<div class="pat-row" style="${isFirst?'background:var(--orange-light)':''}">
         <div>
           <div class="pl${isFirst?' b':''}">📅 ${label}${isFirst?' <span style="font-size:.68rem;color:var(--orange);font-weight:700"> · ultimo</span>':''}</div>
-          <div style="font-size:.68rem;color:var(--muted);margin-top:1px">
-            Liq: ${fmtK(h.liq)} · Stock: ${fmtK(h.stock)}${h.daInc?` · Da inc: ${fmtK(h.daInc)}`:''}
-          </div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:1px">Liq: ${fv(h.liq,'AED')} · Stock: ${fv(h.stock,'AED')}${h.daInc?` · Da inc: ${fv(h.daInc,'AED')}`:''}</div>
         </div>
-        <div class="pv${isFirst?' acc':''}">${fmtK(tot)}</div>
+        <div class="pv${isFirst?' acc':''}">${fv(tot,'AED')}</div>
       </div>`;
     });
     html += `</div>`;
@@ -1983,10 +2010,12 @@ async function deleteFattura(id) {
 // ── PATRIMONIO ADD/DELETE ──────────────────────────────
 async function addSaldo() {
   const voce=prompt('Nome voce (es. Conto XYZ):'); if(!voce||!voce.trim()) return;
-  const valStr=prompt('Importo in k€ (negativo per uscita):'); if(valStr===null) return;
+  const valStr=prompt('Importo in k (negativo per uscita):'); if(valStr===null) return;
   const val=parseFloat(valStr)||0;
-  db.saldi.push({id:'s'+Date.now(),voce:voce.trim(),val});
-  addLog('➕ Saldo aggiunto: '+voce.trim()+' €'+val+'k');
+  const curr=prompt('Valuta (AED / EUR / USD):','AED');
+  const currency=['AED','EUR','USD'].includes((curr||'').toUpperCase())?(curr||'AED').toUpperCase():'AED';
+  db.saldi.push({id:'s'+Date.now(),voce:voce.trim(),val,currency});
+  addLog('➕ Saldo aggiunto: '+voce.trim()+' '+val+'k '+currency);
   renderPat(); await save();
 }
 
@@ -2000,10 +2029,12 @@ async function deleteSaldo(id) {
 
 async function addCredito() {
   const voce=prompt('Nome credito:'); if(!voce||!voce.trim()) return;
-  const valStr=prompt('Importo in k€:'); if(valStr===null) return;
+  const valStr=prompt('Importo in k:'); if(valStr===null) return;
   const val=parseFloat(valStr)||0;
-  db.crediti.push({id:'c'+Date.now(),voce:voce.trim(),val});
-  addLog('➕ Credito aggiunto: '+voce.trim()+' €'+val+'k');
+  const curr=prompt('Valuta (AED / EUR / USD):','AED');
+  const currency=['AED','EUR','USD'].includes((curr||'').toUpperCase())?(curr||'AED').toUpperCase():'AED';
+  db.crediti.push({id:'c'+Date.now(),voce:voce.trim(),val,currency});
+  addLog('➕ Credito aggiunto: '+voce.trim()+' '+val+'k '+currency);
   renderPat(); await save();
 }
 
