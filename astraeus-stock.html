@@ -1,0 +1,2065 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Astraeus FZE — Fleet</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root {
+  --bg:#f0f2f5; --surf:#fff; --surf2:#eaecf0; --surf3:#dde0e7;
+  --border:#d0d4dc; --orange:#1a3a6b; --orange-light:#e8edf8; --orange-btn:#1e4480;
+  --green:#1a7a3e; --green-bg:#e8f5ee;
+  --red:#c0392b; --red-bg:#fdecea;
+  --blue:#c8960a; --blue-bg:#fdf5e0;
+  --purple:#7b2fa0; --purple-bg:#f3e8fb;
+  --text:#1a1a1a; --text2:#444; --muted:#888; --muted2:#bbb;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --gold:#c8960a; --gold-light:#fdf5e0; --gold-btn:#d4a00f;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;overscroll-behavior:none}
+input,select,textarea{font-family:'Barlow',sans-serif}
+.hide{display:none!important}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px}
+.logo{font-family:'Barlow Condensed',sans-serif;font-size:3rem;font-weight:900;color:var(--orange);letter-spacing:3px;text-align:center}
+.logo-sub{font-size:.72rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:3px;text-align:center;margin-bottom:40px}
+.login-box{width:100%;max-width:300px}
+.field-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:600}
+.field-input{width:100%;background:var(--surf);border:1.5px solid var(--border);border-radius:var(--radius);padding:13px 16px;color:var(--text);font-size:1.05rem;outline:none;-webkit-appearance:none;text-align:center;letter-spacing:3px;box-shadow:var(--shadow)}
+.field-input:focus{border-color:var(--orange)}
+.login-btn{width:100%;margin-top:12px;background:var(--orange-btn);border:none;border-radius:var(--radius);padding:15px;font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:#fff;letter-spacing:2px;cursor:pointer;-webkit-appearance:none}
+.login-btn:active{transform:scale(.97)}
+.login-err{color:var(--red);font-size:.82rem;text-align:center;margin-top:10px;min-height:18px}
+
+/* HEADER */
+header{background:var(--surf);border-bottom:1px solid var(--border);padding:11px 14px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.header-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.h-logo{font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:900;color:var(--orange);letter-spacing:2px;flex-shrink:0}
+.h-right{display:flex;align-items:center;gap:8px}
+.h-user{font-size:.75rem;color:var(--muted);font-weight:600}
+.icon-btn{background:var(--surf2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 11px;color:var(--text2);font-size:.8rem;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:500;white-space:nowrap;-webkit-appearance:none}
+.icon-btn:active{background:var(--surf3)}
+.icon-btn.primary{background:var(--orange-btn);border-color:var(--orange-btn);color:#fff;font-weight:600}
+
+/* TABS */
+.tabs{background:var(--surf);border-bottom:1px solid var(--border);display:flex;position:sticky;top:50px;z-index:49}
+.tabs-inner{max-width:900px;margin:0 auto;display:flex;width:100%;overflow-x:auto}
+.tabs-inner::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:fit-content;padding:10px 10px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.92rem;font-weight:700;letter-spacing:.3px;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;transition:.15s;white-space:nowrap}
+.tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+
+/* PAGES */
+.page{display:none}
+.page.active{display:block}
+.page-inner{max-width:900px;margin:0 auto;padding:14px 14px 80px}
+
+/* STATS */
+.stats-row{display:flex;gap:8px;margin-bottom:13px;flex-wrap:wrap}
+.sc{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:9px 13px;box-shadow:var(--shadow);flex-shrink:0}
+.sc .sv{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:var(--orange)}
+.sc .sl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:1px;font-weight:600}
+
+/* TOOLBAR */
+.table-toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.tbl-search{background:var(--surf);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:.85rem;outline:none;flex:1;box-shadow:var(--shadow)}
+.tbl-search:focus{border-color:var(--orange)}
+.sort-select{background:var(--surf);border:1.5px solid var(--border);border-radius:var(--radius);padding:8px 26px 8px 10px;color:var(--text2);font-size:.8rem;outline:none;-webkit-appearance:none;box-shadow:var(--shadow);cursor:pointer;flex-shrink:0;font-family:'Barlow',sans-serif;font-weight:500;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+
+/* STOCK CARD */
+.scard{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);animation:fadeUp .18s ease both}
+.scard.c-crist{border-left:3px solid var(--blue)}
+.scard.c-vend{border-left:3px solid var(--red)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.scard-top{padding:10px 13px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.scard-modello{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:800;color:var(--text);cursor:text;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{border-radius:20px;padding:3px 10px;font-size:.68rem;font-weight:700;white-space:nowrap;flex-shrink:0}
+.badge.disp{background:var(--green-bg);color:var(--green)}
+.badge.crist{background:var(--blue-bg);color:var(--blue)}
+.badge.vend{background:var(--red-bg);color:var(--red)}
+.badge.sold{background:var(--purple-bg);color:var(--purple)}
+.scard-fields{padding:0 13px 10px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+.sfield{background:var(--surf2);border-radius:7px;padding:7px 9px;cursor:text;position:relative}
+.sfield.editing{background:var(--orange-light);outline:2px solid var(--orange);outline-offset:-1px;border-radius:7px}
+.sf-label{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;font-weight:600;margin-bottom:2px}
+.sf-val{font-size:.88rem;font-weight:700;color:var(--text)}
+.sf-val.acc{color:var(--orange)}
+.scard-actions{padding:0 13px 10px;display:flex;gap:6px}
+.act-btn{background:var(--surf2);border:1px solid var(--border);border-radius:7px;padding:7px 12px;font-size:.75rem;color:var(--text2);cursor:pointer;font-family:'Barlow',sans-serif;font-weight:500;-webkit-appearance:none}
+.act-btn:active{background:var(--surf3)}
+.act-btn.sell{background:var(--purple-bg);border-color:var(--purple);color:var(--purple);font-weight:600}
+.act-btn.danger{color:var(--red)}
+.act-btn.danger:active{background:var(--red-bg)}
+.status-sel{border:none;font-size:.68rem;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:20px;outline:none;-webkit-appearance:none;font-family:'Barlow',sans-serif}
+.status-sel.disp{background:var(--green-bg);color:var(--green)}
+.status-sel.crist{background:var(--blue-bg);color:var(--blue)}
+.status-sel.vend{background:var(--red-bg);color:var(--red)}
+
+/* LISTINO */
+.lcard{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);animation:fadeUp .18s ease both}
+.lcard.c-crist{border-left:3px solid var(--blue)}
+.lcard-top{padding:10px 13px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lcard-name{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text)}
+.lcard-sub{font-size:.72rem;color:var(--muted);margin-top:1px}
+.lcard-fields{padding:0 13px 10px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+.lfield{background:var(--surf2);border-radius:7px;padding:7px 9px;cursor:text}
+.lfield.editing{background:var(--blue-bg);outline:2px solid var(--blue);outline-offset:-1px;border-radius:7px}
+.lf-label{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;font-weight:600;margin-bottom:2px}
+.lf-val{font-size:.88rem;font-weight:700;color:var(--text)}
+.lf-val.acc{color:var(--orange)}
+
+/* VENDUTE */
+.sold-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}
+.ss{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:11px 10px;box-shadow:var(--shadow);text-align:center}
+.ss .sv{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800}
+.ss .sl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;font-weight:600}
+.ss.pos .sv{color:var(--green)}
+.ss.neg .sv{color:var(--red)}
+.ss.neu .sv{color:var(--orange)}
+.mcard{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);animation:fadeUp .18s ease both}
+.mcard.sold-card{border-left:3px solid var(--purple)}
+.mcard-head{padding:11px 13px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.mcard-name{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text)}
+.mcard-meta{font-size:.7rem;color:var(--muted);margin-top:2px}
+.mcard-stats{padding:9px 13px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ms{background:var(--surf2);border-radius:6px;padding:7px 8px}
+.ms-l{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.ms-v{font-size:.88rem;font-weight:700;color:var(--text);margin-top:2px}
+.ms-v.acc{color:var(--orange)}
+.ms-v.pos{color:var(--green)}
+.ms-v.neg{color:var(--red)}
+.mcard-footer{padding:0 13px 8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mcard-note{font-size:.72rem;color:var(--text2);background:var(--surf2);border-radius:5px;padding:3px 8px}
+.mcard-date{font-size:.7rem;color:var(--muted2)}
+.mcard-actions{padding:0 13px 11px;display:flex;gap:6px}
+.mact-btn{flex:1;background:var(--surf2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;font-size:.77rem;color:var(--text2);cursor:pointer;text-align:center;font-family:'Barlow',sans-serif;font-weight:500}
+.mact-btn.danger{color:var(--red)}
+.mact-btn.danger:active{background:var(--red-bg)}
+
+/* ANDAMENTO */
+.chart-wrap{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:10px}
+.chart-title{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+canvas{width:100%!important;height:220px!important}
+.chart-empty{text-align:center;padding:30px;color:var(--muted);font-size:.85rem}
+
+/* PATRIMONIO */
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin:16px 0 7px}
+.pat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:9px;box-shadow:var(--shadow)}
+.pat-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border)}
+.pat-row:last-child{border-bottom:none}
+.pat-row.tot{background:var(--surf2)}
+.pl{font-size:.87rem;color:var(--text2)}
+.pl.b{color:var(--text);font-weight:700}
+.pv{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text)}
+.pv.acc{color:var(--orange)}
+.pat-edit-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
+.pat-edit-row:last-child{border-bottom:none}
+.pat-edit-input{background:transparent;border:none;color:var(--orange);font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;text-align:right;width:70px;outline:none;-webkit-appearance:none}
+.pat-edit-input.neg{color:var(--red)}
+.pat-edit-input:focus{border-bottom:1.5px solid var(--orange)}
+.pat-edit-input:focus{border-bottom:1.5px solid var(--orange)}
+.grand-box{background:linear-gradient(135deg,#f0f4ff,#e8edf8);border:1.5px solid #1e4480;border-radius:var(--radius);padding:15px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+
+/* FATTURE */
+.fattura-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);animation:fadeUp .18s ease both;display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.fattura-body{padding:11px 13px}
+.fattura-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap}
+.fattura-nr{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:900;color:var(--text);letter-spacing:.3px}
+.fattura-cliente{font-size:.82rem;color:var(--text2);font-weight:500}
+.fattura-tipo{font-size:.7rem;color:var(--muted);background:var(--surf2);border-radius:10px;padding:2px 8px}
+.fattura-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.fattura-importo{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:var(--orange)}
+.fattura-data{font-size:.72rem;color:var(--muted2)}
+.fattura-note{font-size:.72rem;color:var(--muted);margin-top:3px}
+.fattura-side{padding:11px 13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;border-left:1px solid var(--border);min-width:90px}
+.fpaid-btn{border:none;border-radius:20px;padding:5px 12px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;white-space:nowrap;-webkit-appearance:none;width:100%;text-align:center}
+.fpaid-btn.pagata{background:var(--green-bg);color:var(--green)}
+.fpaid-btn.attesa{background:var(--red-bg);color:var(--red)}
+.fdel-btn{background:none;border:none;font-size:.8rem;color:var(--muted2);cursor:pointer;padding:2px 6px}
+.fdel-btn:hover{color:var(--red)}
+.fatture-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px}
+.fat-stat{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:10px 10px;box-shadow:var(--shadow);text-align:center}
+.fat-stat .fsv{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:var(--orange)}
+.fat-stat.green .fsv{color:var(--green)}
+.fat-stat.red .fsv{color:var(--red)}
+.fat-stat .fsl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;font-weight:600}
+
+/* LOG */
+.log-entry{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:7px;box-shadow:var(--shadow)}
+.log-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px}
+.log-user{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:800;letter-spacing:.3px}
+.log-user.francy{color:var(--orange)}
+.log-user.raffaele{color:var(--blue)}
+.log-time{font-size:.68rem;color:var(--muted2)}
+.log-action{font-size:.78rem;color:var(--text2)}
+.filter-chip-bar{display:flex;gap:7px;margin-bottom:11px;overflow-x:auto;padding-bottom:2px}
+.filter-chip-bar::-webkit-scrollbar{display:none}
+.chip{background:var(--surf);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:.78rem;color:var(--text2);white-space:nowrap;cursor:pointer;flex-shrink:0;font-weight:500}
+.chip.active{background:var(--orange-light);border-color:var(--orange);color:var(--orange);font-weight:700}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:200;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:93vh;overflow-y:auto;padding:20px 16px 44px}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.45rem;font-weight:800;color:var(--text);margin-bottom:16px}
+.form-row{margin-bottom:12px}
+.form-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;font-weight:600}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--surf2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 12px;color:var(--text);font-size:.95rem;outline:none;-webkit-appearance:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--orange);background:var(--surf)}
+.form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.form-textarea{resize:vertical;min-height:65px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.modal-actions{display:flex;gap:9px;margin-top:16px}
+.modal-btn{flex:1;border:none;border-radius:var(--radius-sm);padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:1px;cursor:pointer;-webkit-appearance:none}
+.modal-btn.save{background:var(--orange-btn);color:#fff}
+.modal-btn.cancel{background:var(--surf2);color:var(--muted);border:1px solid var(--border)}
+.sell-info{background:var(--surf2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px}
+.sell-info-name{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800}
+.sell-info-cost{font-size:.82rem;color:var(--muted);margin-top:3px}
+.margin-preview{background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius-sm);padding:12px 14px;margin-top:10px;display:none}
+.margin-preview.neg{background:var(--red-bg);border-color:var(--red)}
+.margin-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;font-weight:600;letter-spacing:.5px}
+.margin-value{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;color:var(--green);margin-top:2px}
+.margin-value.neg{color:var(--red)}
+.margin-pct{font-size:.82rem;color:var(--green);font-weight:600}
+.margin-pct.neg{color:var(--red)}
+
+/* MISC */
+.loading{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.9rem}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);border-radius:20px;padding:10px 20px;font-size:.83rem;color:#fff;z-index:500;transition:.3s;white-space:nowrap;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{background:#1a7a3e}
+.toast.err{background:var(--red)}
+
+@media(max-width:500px){
+  .scard-fields,.lcard-fields{grid-template-columns:1fr 1fr}
+  .mcard-stats{grid-template-columns:1fr 1fr}
+}
+
+/* ── FATTURE CARDS ── */
+.fat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);animation:fadeUp .18s ease both}
+.fat-head{padding:12px 13px;display:flex;align-items:flex-start;gap:8px}
+.fat-nr{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:900;color:var(--text);letter-spacing:.3px}
+.fat-cliente{font-size:.85rem;color:var(--text2);font-weight:600}
+.fat-importo{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:var(--orange)}
+.fat-data{font-size:.72rem;color:var(--muted2)}
+.fat-action-btn{background:var(--surf2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.72rem;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;color:var(--text2);white-space:nowrap;-webkit-appearance:none;transition:.15s}
+.fat-action-btn.green{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.fat-action-btn.del{color:var(--red)}
+.fat-action-btn.del:active{background:var(--red-bg)}
+.fatture-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:13px}
+.fat-stat{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:10px 8px;box-shadow:var(--shadow);text-align:center}
+.fat-stat .fsv{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800}
+.fat-stat.green .fsv{color:var(--green)}
+.fat-stat.red .fsv{color:var(--red)}
+.fat-stat.yellow .fsv{color:#b8860b}
+.fat-stat.neu .fsv{color:var(--orange)}
+.fat-stat .fsl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;font-weight:600}
+
+
+/* ── PATRIMONIO BUTTONS ── */
+.pat-del-btn{background:none;border:none;width:24px;height:24px;border-radius:6px;font-size:.7rem;color:var(--muted2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;transition:.15s}
+.pat-del-btn:hover{background:var(--red-bg);color:var(--red)}
+.pat-add-btn{width:100%;padding:11px 16px;background:none;border:none;border-top:1px solid var(--border);color:var(--orange);font-family:'Barlow',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;transition:.15s}
+.pat-add-btn:hover{background:var(--orange-light)}
+.pat-add-btn::before{content:'＋';font-size:1rem;font-weight:700;line-height:1;color:var(--orange)}
+
+
+/* ── PREMIUM ANIMATIONS ── */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px) scale(.99)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{
+  from{opacity:0;transform:translateY(40px) scale(.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+@keyframes statPop{
+  0%{transform:scale(.93);opacity:0}
+  60%{transform:scale(1.04)}
+  100%{transform:scale(1);opacity:1}
+}
+@keyframes shimmer{
+  0%{background-position:-400px 0}
+  100%{background-position:400px 0}
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* Cards — smooth spring hover */
+.scard,.lcard,.fat-card,.mcard,.pat-card{
+  transition:box-shadow .25s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1);
+  will-change:transform;
+}
+.scard:hover,.lcard:hover{
+  box-shadow:0 8px 30px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.06);
+  transform:translateY(-1px);
+}
+.scard:active,.lcard:active{transform:scale(.985)}
+.fat-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.09);transform:translateY(-1px)}
+
+/* Stats pop in */
+.sc{
+  animation:statPop .35s cubic-bezier(.34,1.4,.64,1) both;
+  transition:box-shadow .2s ease,transform .15s ease;
+}
+.sc:nth-child(1){animation-delay:.05s}
+.sc:nth-child(2){animation-delay:.1s}
+.sc:nth-child(3){animation-delay:.15s}
+.sc:hover{box-shadow:0 4px 14px rgba(0,0,0,.1);transform:translateY(-1px)}
+
+/* Tabs */
+.tab{transition:color .2s ease;position:relative}
+.tab.active::after{
+  content:'';position:absolute;bottom:-1px;left:20%;right:20%;
+  height:2.5px;background:var(--orange);border-radius:2px;
+  animation:fadeIn .2s ease;
+}
+
+/* Buttons */
+.icon-btn,.act-btn,.fat-action-btn,.modal-btn,.pat-add-btn{
+  transition:background .15s ease,transform .12s cubic-bezier(.2,.8,.2,1),box-shadow .15s ease,color .15s ease,border-color .15s ease;
+}
+.icon-btn:active,.act-btn:active,.fat-action-btn:active{transform:scale(.93)}
+.icon-btn.primary:hover{box-shadow:0 4px 16px rgba(232,148,15,.35)}
+.modal-btn.save:hover{box-shadow:0 4px 16px rgba(232,148,15,.3)}
+.modal-btn:active{transform:scale(.96)}
+
+/* Inputs — Apple-style focus */
+.form-input,.form-select,.form-textarea,.field-input,.tbl-search,.search-input,.pat-edit-input{
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  box-shadow:0 0 0 4px rgba(212,130,10,.14);
+  background:var(--surf);
+}
+.field-input:focus{box-shadow:0 0 0 4px rgba(212,130,10,.14)}
+.tbl-search:focus,.search-input:focus{box-shadow:0 0 0 3px rgba(212,130,10,.12)}
+
+/* Editable fields on tap */
+.sfield,.lfield{transition:background .15s ease,outline .1s ease}
+.sfield.editing,.lfield.editing{
+  background:var(--orange-light);
+  outline:2px solid var(--orange);
+  border-radius:8px;
+}
+
+/* Modal — spring animation */
+.overlay{transition:opacity .22s ease}
+.overlay.open{animation:overlayIn .2s ease both}
+.overlay.open .modal{animation:modalIn .28s cubic-bezier(.34,1.2,.64,1) both}
+
+/* Page entrance */
+.page.active .page-inner{animation:fadeUp .22s cubic-bezier(.2,.8,.2,1) both}
+
+/* Login button */
+.login-btn{transition:transform .15s ease,box-shadow .2s ease}
+.login-btn:hover{box-shadow:0 8px 24px rgba(232,148,15,.4);transform:translateY(-1px)}
+.login-btn:active{transform:scale(.97)}
+
+/* Grand box */
+.grand-box{transition:box-shadow .2s ease,transform .15s ease}
+.grand-box:hover{box-shadow:0 6px 24px rgba(232,184,75,.22);transform:translateY(-1px)}
+
+/* Saving indicator */
+#saving-indicator{animation:fadeIn .2s ease}
+
+/* Header */
+header{box-shadow:0 1px 0 var(--border),0 4px 16px rgba(0,0,0,.04)}
+
+/* Chip */
+.chip{transition:all .15s cubic-bezier(.2,.8,.2,1)}
+.chip:active{transform:scale(.93)}
+
+/* Stats row entrance */
+.stats-row,.fatture-summary{animation:fadeUp .25s cubic-bezier(.2,.8,.2,1) both}
+
+/* Staggered list items */
+.scard,.fat-card,.lcard{animation:fadeUp .25s cubic-bezier(.2,.8,.2,1) both}
+#stock-list .scard:nth-child(1){animation-delay:.03s}
+#stock-list .scard:nth-child(2){animation-delay:.07s}
+#stock-list .scard:nth-child(3){animation-delay:.11s}
+#stock-list .scard:nth-child(4){animation-delay:.14s}
+#stock-list .scard:nth-child(5){animation-delay:.17s}
+#stock-list .scard:nth-child(n+6){animation-delay:.19s}
+#fatture-list .fat-card:nth-child(1){animation-delay:.03s}
+#fatture-list .fat-card:nth-child(2){animation-delay:.07s}
+#fatture-list .fat-card:nth-child(3){animation-delay:.1s}
+#fatture-list .fat-card:nth-child(n+4){animation-delay:.13s}
+
+/* Stats centered and wider */
+.stats-row{justify-content:center;max-width:400px;margin-left:auto;margin-right:auto}
+
+/* ── FATTURE CARDS ── */
+.fat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);animation:fadeUp .18s ease both}
+.fat-head{padding:12px 13px;display:flex;align-items:flex-start;gap:8px}
+.fat-nr{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:900;color:var(--text);letter-spacing:.3px}
+.fat-cliente{font-size:.85rem;color:var(--text2);font-weight:600}
+.fat-importo{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:var(--orange)}
+.fat-data{font-size:.72rem;color:var(--muted2)}
+.fat-action-btn{background:var(--surf2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.72rem;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;color:var(--text2);white-space:nowrap;-webkit-appearance:none;transition:.15s}
+.fat-action-btn.green{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.fat-action-btn.del{color:var(--red)}
+.fat-action-btn.del:active{background:var(--red-bg)}
+.fatture-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:13px}
+.fat-stat{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:10px 8px;box-shadow:var(--shadow);text-align:center}
+.fat-stat .fsv{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800}
+.fat-stat.green .fsv{color:var(--green)}
+.fat-stat.red .fsv{color:var(--red)}
+.fat-stat.yellow .fsv{color:#b8860b}
+.fat-stat.neu .fsv{color:var(--orange)}
+.fat-stat .fsl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;font-weight:600}
+
+
+/* ── PATRIMONIO BUTTONS ── */
+.pat-del-btn{background:none;border:none;width:24px;height:24px;border-radius:6px;font-size:.7rem;color:var(--muted2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;transition:.15s}
+.pat-del-btn:hover{background:var(--red-bg);color:var(--red)}
+.pat-add-btn{width:100%;padding:11px 16px;background:none;border:none;border-top:1px solid var(--border);color:var(--orange);font-family:'Barlow',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;transition:.15s}
+.pat-add-btn:hover{background:var(--orange-light)}
+.pat-add-btn::before{content:'＋';font-size:1rem;font-weight:700;line-height:1;color:var(--orange)}
+
+
+/* ── MICRO ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+.scard{transition:box-shadow .2s ease,transform .2s ease}
+.scard:active{transform:scale(.99)}
+.scard:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
+
+.lcard{transition:box-shadow .2s ease,transform .2s ease}
+.lcard:active{transform:scale(.99)}
+.lcard:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
+
+.fat-card{transition:box-shadow .2s ease,transform .15s ease}
+.fat-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.1)}
+
+.mcard{transition:box-shadow .2s ease}
+.mcard:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
+
+.tab{transition:color .18s ease,border-color .18s ease}
+.chip{transition:background .15s ease,border-color .15s ease,color .15s ease}
+
+.icon-btn{transition:background .15s ease,transform .1s ease,box-shadow .15s ease}
+.icon-btn:active{transform:scale(.95)}
+.icon-btn.primary:hover{box-shadow:0 4px 12px rgba(232,148,15,.3)}
+
+.act-btn{transition:background .15s ease,border-color .15s ease,color .15s ease,transform .1s ease}
+.act-btn:active{transform:scale(.96)}
+
+.modal-btn{transition:opacity .15s ease,transform .1s ease}
+.modal-btn:active{transform:scale(.97)}
+
+.pat-card{transition:box-shadow .2s ease}
+.sc{transition:box-shadow .2s ease}
+.sc:hover{box-shadow:0 3px 12px rgba(0,0,0,.1)}
+
+/* Better shadows */
+.scard,.lcard,.fat-card,.mcard,.pat-card,.sc{box-shadow:0 1px 4px rgba(0,0,0,.07),0 2px 8px rgba(0,0,0,.04)}
+
+/* Smoother inputs */
+.form-input,.form-select,.form-textarea,.field-input,.tbl-search,.search-input{transition:border-color .18s ease,box-shadow .18s ease}
+.form-input:focus,.form-select:focus,.form-textarea:focus,.field-input:focus,.tbl-search:focus,.search-input:focus{box-shadow:0 0 0 3px rgba(212,130,10,.12)}
+
+/* Login button glow */
+.login-btn{transition:transform .15s ease,box-shadow .15s ease}
+.login-btn:hover{box-shadow:0 6px 20px rgba(232,148,15,.35)}
+
+/* Fat action buttons */
+.fat-action-btn{transition:background .15s ease,transform .1s ease,border-color .15s ease}
+.fat-action-btn:active{transform:scale(.93)}
+
+/* Pat add/del */
+.pat-add-btn{transition:background .15s ease}
+.pat-del-btn{transition:background .15s ease,color .15s ease}
+
+/* Grand box glow on hover */
+.grand-box{transition:box-shadow .2s ease}
+.grand-box:hover{box-shadow:0 4px 20px rgba(232,184,75,.25)}
+
+/* Staggered card animations */
+#stock-list .scard:nth-child(1){animation:fadeUp .2s ease both .02s}
+#stock-list .scard:nth-child(2){animation:fadeUp .2s ease both .05s}
+#stock-list .scard:nth-child(3){animation:fadeUp .2s ease both .08s}
+#stock-list .scard:nth-child(4){animation:fadeUp .2s ease both .11s}
+#stock-list .scard:nth-child(5){animation:fadeUp .2s ease both .14s}
+#stock-list .scard:nth-child(n+6){animation:fadeUp .2s ease both .16s}
+
+#listino-list .lcard:nth-child(1){animation:fadeUp .2s ease both .02s}
+#listino-list .lcard:nth-child(2){animation:fadeUp .2s ease both .05s}
+#listino-list .lcard:nth-child(3){animation:fadeUp .2s ease both .08s}
+#listino-list .lcard:nth-child(n+4){animation:fadeUp .2s ease both .12s}
+
+#fatture-list .fat-card:nth-child(1){animation:fadeUp .2s ease both .02s}
+#fatture-list .fat-card:nth-child(2){animation:fadeUp .2s ease both .05s}
+#fatture-list .fat-card:nth-child(n+3){animation:fadeUp .2s ease both .09s}
+
+/* Tab indicator animation */
+.tab.active{position:relative}
+.tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2.5px;background:var(--orange);border-radius:2px;animation:fadeIn .2s ease}
+
+/* Saving indicator pulse */
+#saving-indicator{animation:fadeIn .2s ease}
+
+/* Stats row entrance */
+.stats-row{animation:slideDown .25s ease both}
+.fatture-summary{animation:slideDown .25s ease both}
+
+/* Header subtle border */
+header{box-shadow:0 1px 0 var(--border),0 2px 8px rgba(0,0,0,.04)}
+.tabs{box-shadow:0 1px 0 var(--border)}
+
+/* Overlay animation */
+.overlay.open .modal{animation:slideDown .22s cubic-bezier(.34,1.3,.64,1) both}
+
+
+/* ── DETAIL PANEL ── */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center}
+.detail-overlay.open{display:flex}
+.detail-panel{background:var(--surf);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px 16px 40px;box-shadow:0 -4px 40px rgba(0,0,0,.15)}
+.detail-panel.open{animation:modalIn .28s cubic-bezier(.34,1.2,.64,1) both}
+.dp-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.dp-title{font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:900;color:var(--text);margin-bottom:4px}
+.dp-sub{font-size:.82rem;color:var(--muted);margin-bottom:18px}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.dp-field{background:var(--surf2);border-radius:10px;padding:11px 13px;cursor:text;transition:background .15s ease}
+.dp-field.editing{background:var(--orange-light);outline:2px solid var(--orange);border-radius:10px}
+.dp-field-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px}
+.dp-field-val{font-size:.95rem;font-weight:600;color:var(--text)}
+.dp-field-val.acc{color:var(--orange)}
+.dp-close{width:100%;margin-top:8px;padding:13px;background:var(--surf2);border:1px solid var(--border);border-radius:12px;font-family:'Barlow',sans-serif;font-size:.9rem;font-weight:600;color:var(--text2);cursor:pointer;-webkit-appearance:none}
+.dp-close:active{background:var(--surf3)}
+.info-btn{background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:'Barlow',sans-serif;font-weight:500;transition:all .15s ease;flex-shrink:0}
+.info-btn:hover{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+.info-btn:active{transform:scale(.9)}
+
+
+/* ── CURRENCY SELECTOR ── */
+.currency-bar{display:flex;gap:6px;align-items:center;padding:0 14px 12px;max-width:var(--max-w,900px);margin:0 auto}
+.curr-btn{background:var(--surf2);border:1.5px solid var(--border);border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;color:var(--text2);transition:all .15s ease;-webkit-appearance:none}
+.curr-btn.active{background:var(--orange-light);border-color:var(--orange);color:var(--orange)}
+.curr-btn:active{transform:scale(.93)}
+.curr-label{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="logo">✈️ ASTRAEUS</div>
+  <div class="logo-sub">FZE — Fleet Management</div>
+  <div class="login-box">
+    <div class="field-label">Password</div>
+    <input class="field-input" type="password" id="pwd-input" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">ENTRA →</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hide">
+  <header>
+    <div class="header-inner">
+      <div class="h-logo">✈️ ASTRAEUS</div>
+      <div class="h-right">
+        <span class="h-user" id="h-user"></span>
+        <button class="icon-btn" onclick="loadFromStorage()" id="sync-btn">⟳</button>
+        <button class="icon-btn" onclick="printStock()" title="Stampa Stock">📋</button>
+        <button class="icon-btn" onclick="printListino()" title="Stampa Listino">📄</button>
+        <button class="icon-btn primary" id="add-btn" onclick="handleAdd()">+ Aggiungi</button>
+      </div>
+    </div>
+  </header>
+  <div class="tabs">
+    <div class="tabs-inner">
+      <div class="tab active" data-tab="stock" onclick="switchTab('stock',this)">📋 Stock</div>
+      <div class="tab" data-tab="fatture" onclick="switchTab('fatture',this)">🧾 Fatture</div>
+      <div class="tab" data-tab="patrimonio" onclick="switchTab('patrimonio',this)">💰 Patrimonio</div>
+      <div class="tab" data-tab="log" onclick="switchTab('log',this)">📋 Log</div>
+    </div>
+  </div>
+
+  <!-- CURRENCY BAR -->
+  <div id="currency-bar" style="background:var(--surf);border-bottom:1px solid var(--border);padding:8px 0">
+    <div class="currency-bar">
+      <span class="curr-label">Valuta:</span>
+      <button class="curr-btn active" onclick="setCurrency('AED',this)">AED</button>
+      <button class="curr-btn" onclick="setCurrency('EUR',this)">€ EUR</button>
+      <button class="curr-btn" onclick="setCurrency('USD',this)">$ USD</button>
+    </div>
+  </div>
+
+  <!-- STOCK -->
+  <div class="page active" id="page-stock">
+    <div class="page-inner">
+      <div class="stats-row">
+        <div class="sc"><div class="sv" id="s-tot">0</div><div class="sl">Macchine</div></div>
+        <div class="sc"><div class="sv" id="s-val">—</div><div class="sl">Valore Stock</div></div>
+      </div>
+      <div class="table-toolbar">
+        <input class="tbl-search" id="stock-search" placeholder="🔍 Cerca modello..." oninput="renderStock()">
+        <select class="sort-select" id="stock-sort" onchange="renderStock()">
+          <option value="az" selected>A → Z</option>
+          <option value="prezzo-desc">Prezzo ↓</option>
+          <option value="prezzo-asc">Prezzo ↑</option>
+          <option value="stato">Stato</option>
+        </select>
+      </div>
+      <div id="stock-list"></div>
+    </div>
+  </div>
+
+  <!-- LISTINO -->
+  <!-- VENDUTE -->
+  <!-- ANDAMENTO -->
+  <!-- PATRIMONIO -->
+  <div class="page" id="page-patrimonio">
+    <div class="page-inner">
+      <div id="pat-content"></div>
+    </div>
+  </div>
+
+  <!-- FATTURE -->
+  <div class="page" id="page-fatture">
+    <div class="page-inner">
+      <div class="fatture-summary">
+        <div class="fat-stat"><div class="fsv" id="fat-tot">0</div><div class="fsl">Fatture</div></div>
+        <div class="fat-stat green"><div class="fsv" id="fat-incassato">€0</div><div class="fsl">Incassato</div></div>
+        <div class="fat-stat red"><div class="fsv" id="fat-attesa">€0</div><div class="fsl">In attesa</div></div>
+      </div>
+      <div class="table-toolbar">
+        <input class="tbl-search" id="fat-search" placeholder="🔍 Nr, cliente..." oninput="renderFatture()">
+        <select class="sort-select" id="fat-filter" onchange="renderFatture()">
+          <option value="tutti">Tutte</option>
+          <option value="attesa">In attesa</option>
+          <option value="pagata">Pagate</option>
+        </select>
+      </div>
+      <div id="fatture-list"></div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="page" id="page-log">
+    <div class="page-inner">
+      <div class="filter-chip-bar">
+        <div class="chip active" data-f="tutti" onclick="setLogFilter(this,'tutti')">Tutti</div>
+        <div class="chip" data-f="Francy" onclick="setLogFilter(this,'Francy')">Francy</div>
+        <div class="chip" data-f="Raffaele" onclick="setLogFilter(this,'Raffaele')">Raffaele</div>
+      </div>
+      <div id="log-list"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="detail-overlay">
+  <div class="detail-panel" id="detail-panel">
+    <div class="dp-handle"></div>
+    <div class="dp-title" id="dp-title">—</div>
+    <div class="dp-sub" id="dp-sub">Dettagli macchina</div>
+    <div class="dp-grid" id="dp-grid"></div>
+    <button class="dp-close" onclick="closeDetail()">Chiudi</button>
+  </div>
+</div>
+
+<!-- SELL MODAL -->
+<div class="overlay" id="sell-overlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💰 Registra Vendita</div>
+    <div class="sell-info">
+      <div class="sell-info-name" id="sell-name">—</div>
+      <div class="sell-info-cost" id="sell-cost">—</div>
+    </div>
+    <div class="form-row">
+      <div class="form-label">Nr Fattura *</div>
+      <input class="form-input" id="sell-invoice" placeholder="es. 42/2026">
+    </div>
+    <div class="form-row">
+      <div class="form-label">Cliente *</div>
+      <input class="form-input" id="sell-cliente" placeholder="Nome cliente o società">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="form-label">Prezzo vendita (k€) *</div>
+        <input class="form-input" id="sell-price" type="number" placeholder="es. 85" inputmode="decimal" step="0.5" oninput="updateMarginPreview()">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Data</div>
+        <input class="form-input" id="sell-date" type="date">
+      </div>
+    </div>
+    <div class="margin-preview" id="margin-preview">
+      <div class="margin-label">Margine stimato</div>
+      <div class="margin-value" id="margin-val">—</div>
+      <div class="margin-pct" id="margin-pct">—</div>
+    </div>
+    <div class="form-row">
+      <div class="form-label">Note</div>
+      <input class="form-input" id="sell-note" placeholder="Facoltativo">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn save" onclick="confirmSell()">✅ CONFERMA VENDITA</button>
+      <button class="modal-btn cancel" onclick="closeSellModal()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- SAVE OVERLAY -->
+<div id="save-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:20px 32px;font-family:Barlow,sans-serif;font-size:1rem;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(0,0,0,.2)">
+    <span style="animation:spin .7s linear infinite;display:inline-block;font-size:1.2rem">⟳</span>
+    Salvataggio in corso...
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="saving-indicator" style="display:none;position:fixed;bottom:60px;right:16px;background:#1a1a1a;color:#fff;border-radius:10px;padding:8px 14px;font-size:.8rem;font-family:Barlow,sans-serif;z-index:999;align-items:center;gap:8px">
+  <span style="animation:spin .7s linear infinite;display:inline-block">⟳</span> Salvataggio...
+</div>
+
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const STORAGE_KEY = 'astraeus_db_v1';
+const API_URL = 'https://api.npoint.io/7756cc43aecf92bc5294';
+const USERS = { 'astra2024': 'Admin', 'astra2025': 'User' };
+
+// ══════════════════════════════════════════════════════
+// STATE — single source of truth, always in memory
+// ══════════════════════════════════════════════════════
+let db = {
+  macchine: [], vendute: [], saldi: [], crediti: [],
+  fatture: [], log: [], patrimHistory: []
+};
+let currentUser = '';
+let currentTab = 'stock';
+let sellId = null;
+let logFilter = 'tutti';
+let chartPatrim = null;
+
+// ══════════════════════════════════════════════════════
+// STORAGE — dead simple, synchronous, no network
+// ══════════════════════════════════════════════════════
+// ── SAVE (npoint, hard lock) ──────────────────────────
+let _isSaving = false;
+let _saveQueued = false;
+
+async function save() {
+  if (_isSaving) { _saveQueued = true; return; }
+  _isSaving = true;
+  _saveQueued = false;
+
+  // Snapshot BEFORE any async gap
+  const snapshot = JSON.stringify(db);
+
+  // Show saving indicator
+  const si = document.getElementById('saving-indicator');
+  if (si) si.style.display = 'flex';
+
+  try {
+    const r = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: snapshot
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    toast('✓ Salvato', 'ok');
+    renderLog();
+  } catch(e) {
+    toast('❌ ERRORE SALVATAGGIO — Riprova!', 'err');
+    console.error('Save error:', e);
+  } finally {
+    _isSaving = false;
+    if (si) si.style.display = 'none';
+    if (_saveQueued) save();
+  }
+}
+
+async function loadFromStorage() {
+  try {
+    const r = await fetch(API_URL);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const loaded = await r.json();
+    db = loaded;
+    // Ensure all arrays exist
+    if (!db.macchine)      db.macchine      = [];
+    if (!db.vendute)       db.vendute       = [];
+    if (!db.saldi || !db.saldi.length)   db.saldi   = defaultSaldi();
+    if (!db.crediti || !db.crediti.length) db.crediti = defaultCrediti();
+    if (!db.fatture)       db.fatture       = [];
+    if (!db.log)           db.log           = [];
+    if (!db.patrimHistory) db.patrimHistory = [];
+    if (db.macchine.length === 0) { seedMacchine(); await save(); }
+    renderAll();
+    toast('✓ Caricato', 'ok');
+  } catch(e) {
+    toast('❌ Errore connessione', 'err');
+    // Fallback to localStorage if available
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        db = JSON.parse(raw);
+        renderAll();
+        toast('⚠️ Dati locali (offline)', 'err');
+      }
+    } catch(e2) {}
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════════════
+function doLogin() {
+  const v = document.getElementById('pwd-input').value;
+  const user = USERS[v];
+  if (user) {
+    currentUser = user;
+    document.getElementById('login-screen').classList.add('hide');
+    document.getElementById('app').classList.remove('hide');
+    document.getElementById('h-user').textContent = user;
+    loadFromStorage();
+  } else {
+    document.getElementById('login-err').textContent = '❌ Password errata';
+    document.getElementById('pwd-input').value = '';
+    setTimeout(() => document.getElementById('login-err').textContent = '', 2500);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════════════════
+function addLog(action) {
+  if (!db.log) db.log = [];
+  const now = new Date();
+  db.log.unshift({
+    id: 'l' + Date.now(),
+    user: currentUser,
+    action,
+    display: now.toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' +
+             now.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'})
+  });
+  if (db.log.length > 300) db.log = db.log.slice(0, 300);
+}
+
+// ══════════════════════════════════════════════════════
+// DEFAULT DATA
+// ══════════════════════════════════════════════════════
+function defaultSaldi() {
+  return [
+    {id:'s1', voce:'VUB Bank (Micy)', val:813},
+    {id:'s2', voce:'BPM (Leone)',      val:11},
+    {id:'s3', voce:'Casa Puglia',      val:83},
+    {id:'s4', voce:'Cash (contanti)',  val:38},
+    {id:'s5', voce:'Uscita prevista',  val:-100},
+    {id:'s6', voce:'Uscita prevista',  val:-100},
+  ];
+}
+function defaultCrediti() {
+  return [
+    {id:'c1', voce:'Marco Aldi',       val:3},
+    {id:'c2', voce:'Benna 988B',       val:3},
+    {id:'c3', voce:'Cat CS563E KIT',   val:4},
+    {id:'c4', voce:'Carrello Davide',  val:2},
+  ];
+}
+function seedMacchine() {
+  db.macchine = [
+    {id:'m1', modello:'Bell B30D (LEONE SNC)',  anno:'',    ore:'', acq:48,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m2', modello:'Cat 3026',               anno:'',    ore:'', acq:95,   spe:4,   stato:'Venduta - da incassare', note:'', location:''},
+    {id:'m3', modello:'Hitachi 470.5B',         anno:'',    ore:'', acq:36,   spe:0,   stato:'Venduta - da incassare', note:'Carrara', location:''},
+    {id:'m4', modello:'Hitachi ZX225USR',       anno:'',    ore:'', acq:14,   spe:0,   stato:'Venduta - da incassare', note:'', location:''},
+    {id:'m5', modello:'Cat 990',                anno:'',    ore:'', acq:9,    spe:0,   stato:'Venduta - da incassare', note:'', location:''},
+    {id:'m6', modello:'Cat 988K 2023',          anno:'2023',ore:'', acq:260,  spe:0,   stato:'Venduta - da incassare', note:'', location:''},
+    {id:'m7', modello:'Volvo L120H',            anno:'',    ore:'', acq:48,   spe:0,   stato:'Venduta - da incassare', note:'', location:''},
+    {id:'m8', modello:'Bell B30E 2020',         anno:'2020',ore:'', acq:90,   spe:0,   stato:'Venduta - da incassare', note:'', location:''},
+    {id:'m9', modello:'Cat 988K 2017',          anno:'2017',ore:'', acq:115,  spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m10',modello:'Volvo L110E',            anno:'',    ore:'', acq:16,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m11',modello:'Volvo EC300',            anno:'',    ore:'', acq:33,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m12',modello:'Cat MH3024',             anno:'',    ore:'', acq:79,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m13',modello:'Trazzi 966M',            anno:'',    ore:'', acq:60,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m14',modello:'Volvo EC480',            anno:'',    ore:'', acq:35,   spe:13,  stato:'Disponibile',           note:'35+10+3', location:''},
+    {id:'m15',modello:'Volvo L220E',            anno:'',    ore:'', acq:15,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m16',modello:'Cat MH3026',             anno:'',    ore:'', acq:95,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m17',modello:'Bell B45E',              anno:'',    ore:'', acq:120,  spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m18',modello:'Telestack TC421',        anno:'',    ore:'', acq:35.5, spe:4.4, stato:'Disponibile',           note:'', location:''},
+    {id:'m19',modello:'Fiat FL145',             anno:'',    ore:'', acq:5,    spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m20',modello:'Komatsu WA470.6',        anno:'',    ore:'', acq:38.5, spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m21',modello:'Cat 966M verde',         anno:'',    ore:'', acq:68,   spe:2.5, stato:'Disponibile',           note:'', location:''},
+    {id:'m22',modello:'Cat 966M',               anno:'',    ore:'', acq:67.5, spe:3.1, stato:'Disponibile',           note:'', location:''},
+    {id:'m23',modello:'Bell B30E Olanda',       anno:'',    ore:'', acq:65,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m24',modello:'Komatsu HD405',          anno:'',    ore:'', acq:49,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m25',modello:'Metso',                  anno:'',    ore:'', acq:76,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m26',modello:'Starsiebe',              anno:'',    ore:'', acq:70,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m27',modello:'Hitachi ZW310.6',        anno:'',    ore:'', acq:82,   spe:0,   stato:'Disponibile',           note:'', location:''},
+    {id:'m28',modello:'Hitachi ZX470.5B',       anno:'',    ore:'', acq:50,   spe:0,   stato:'Disponibile',           note:'Siad', location:''},
+    {id:'m29',modello:'Marcoaldi',              anno:'',    ore:'', acq:3,    spe:0,   stato:'Disponibile',           note:'', location:''},
+  ];
+}
+
+// ══════════════════════════════════════════════════════
+// PATRIMONY SNAPSHOT (Friday 19:00+)
+// ══════════════════════════════════════════════════════
+function maybeSnapshot() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun,1=Mon...5=Fri,6=Sat
+  if (day === 0 || day === 6) return; // no weekends
+  if (now.getHours() < 19) return;   // only after 19:00
+  if (!db.patrimHistory) db.patrimHistory = [];
+  // Key = YYYY-MM-DD so one per day max
+  const dayKey = now.toISOString().split('T')[0];
+  const last = db.patrimHistory[db.patrimHistory.length - 1];
+  if (last && last.date === dayKey) return; // already snapped today
+  const liq   = db.saldi.reduce((s,x) => s + (parseFloat(x.val)||0), 0);
+  const cred  = db.crediti.reduce((s,x) => s + (parseFloat(x.val)||0), 0);
+  const stock = db.macchine.reduce((s,m) => s + (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0), 0);
+  const daInc = (db.fatture||[]).reduce((s,f) => {
+    if (f.stato==='attesa') return s + (parseFloat(f.importo)||0);
+    if (f.stato==='parziale') return s + (parseFloat(f.importo)||0) - (parseFloat(f.acconto)||0);
+    return s;
+  }, 0);
+  const totale = liq + cred + stock + daInc;
+  db.patrimHistory.push({ date: dayKey, liq: Math.round(liq), cred: Math.round(cred), stock: Math.round(stock), daInc: Math.round(daInc), totale: Math.round(totale) });
+  if (db.patrimHistory.length > 52) db.patrimHistory = db.patrimHistory.slice(-52);
+  save();
+}
+function getWeek(d) {
+  const s = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  s.setUTCDate(s.getUTCDate() + 4 - (s.getUTCDay() || 7));
+  const y = new Date(Date.UTC(s.getUTCFullYear(), 0, 1));
+  return Math.ceil((((s - y) / 86400000) + 1) / 7);
+}
+
+// ══════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════
+function switchTab(name, el) {
+  currentTab = name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  document.getElementById('add-btn').style.display = (name === 'log') ? 'none' : '';
+  if (name === 'log') renderLog();
+  if (name === 'fatture') renderFatture();
+  if (name === 'patrimonio') { maybeSnapshot(); }
+}
+
+function renderAll() {
+  renderStock();
+  renderPat();
+  renderFatture();
+  renderLog();
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y, m, g] = d.split('-');
+  return `${g}/${m}/${y}`;
+}
+function sortMacchine(list, by) {
+  return [...list].sort((a, b) => {
+    if (by === 'prezzo-desc') return ((parseFloat(b.acq)||0)+(parseFloat(b.spe)||0)) - ((parseFloat(a.acq)||0)+(parseFloat(a.spe)||0));
+    if (by === 'prezzo-asc')  return ((parseFloat(a.acq)||0)+(parseFloat(a.spe)||0)) - ((parseFloat(b.acq)||0)+(parseFloat(b.spe)||0));
+    if (by === 'stato')       return (a.stato||'').localeCompare(b.stato||'');
+    return (a.modello||'').localeCompare(b.modello||'');
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// INLINE EDIT — always resolves machine by ID at commit
+// ══════════════════════════════════════════════════════
+function makeEditable(valEl, machineId, field, type) {
+  if (valEl.querySelector('input')) return;
+  const sfield = valEl.closest('.sfield') || valEl.closest('.lfield');
+  if (sfield) sfield.classList.add('editing');
+  const m = db.macchine.find(x => x.id === machineId);
+  if (!m) return;
+  const origVal = m[field] !== undefined ? m[field] : '';
+  const inp = document.createElement('input');
+  inp.type = type === 'number' ? 'number' : 'text';
+  inp.value = origVal;
+  if (type === 'number') inp.inputMode = 'decimal';
+  inp.style.cssText = 'width:100%;border:none;outline:none;background:transparent;font-size:inherit;font-weight:inherit;color:inherit;padding:0;font-family:Barlow,sans-serif';
+  valEl.innerHTML = '';
+  valEl.appendChild(inp);
+  inp.focus();
+  inp.select();
+  let committed = false;
+  function commit() {
+    if (committed) return;
+    committed = true;
+    // Re-resolve machine by ID — never use closure reference
+    const machine = db.macchine.find(x => x.id === machineId);
+    if (!machine) { if (sfield) sfield.classList.remove('editing'); return; }
+    let val = inp.value.trim();
+    if (type === 'number') val = val === '' ? '' : (parseFloat(val) || 0);
+    if (String(machine[field]) !== String(val)) {
+      addLog('✏️ ' + machine.modello + ': ' + field + ' → ' + val);
+    }
+    machine[field] = val;
+    if (sfield) sfield.classList.remove('editing');
+    // Update display
+    const display = (field === 'ore' && val) ? Number(val).toLocaleString('it-IT') : (val || '—');
+    valEl.textContent = display;
+    // Update totale cell if needed
+    if (field === 'acq' || field === 'spe') {
+      const card = document.querySelector('#stock-list [data-id="' + machineId + '"]');
+      if (card) {
+        const totEl = card.querySelector('.sf-tot');
+        if (totEl) {
+          const tot = (parseFloat(machine.acq)||0) + (parseFloat(machine.spe)||0);
+          totEl.textContent = tot || '—';
+        }
+      }
+      updateStockStats();
+      renderPat();
+    }
+    if (['acq','spe','anno','ore','location'].includes(field)) {
+      const lcard = document.querySelector('#listino-list [data-id="' + machineId + '"] .lf-costo');
+      if (lcard) {
+        const tot = (parseFloat(machine.acq)||0) + (parseFloat(machine.spe)||0);
+        lcard.textContent = fmtK(tot);
+      }
+    }
+    save();
+  }
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+    if (e.key === 'Escape') {
+      committed = true;
+      if (sfield) sfield.classList.remove('editing');
+      valEl.textContent = (field === 'ore' && origVal) ? Number(origVal).toLocaleString('it-IT') : (origVal || '—');
+    }
+  });
+}
+function editSfield(el, id, field, type) {
+  const valEl = el.querySelector('.sf-val');
+  if (!valEl) return;
+  makeEditable(valEl, id, field, type, () => {
+    updateCardTotale(db.macchine.find(x=>x.id===id));
+    updateStockStats();
+  });
+}
+
+
+function editModello(el, machineId) {
+  if (el.querySelector('input')) return;
+  const machine = db.macchine.find(x => x.id === machineId);
+  if (!machine) return;
+  const origName = machine.modello || '';
+  const inp = document.createElement('input');
+  inp.value = origName;
+  inp.style.cssText = 'width:100%;border:none;outline:none;background:transparent;font-family:Barlow Condensed,sans-serif;font-size:1.15rem;font-weight:800;color:var(--text);padding:0';
+  el.innerHTML = '';
+  el.appendChild(inp);
+  inp.focus();
+  inp.select();
+  let committed = false;
+  function commit() {
+    if (committed) return;
+    committed = true;
+    const m2 = db.macchine.find(x => x.id === machineId);
+    if (!m2) { el.textContent = origName; return; }
+    const newName = inp.value.trim() || origName;
+    if (newName !== m2.modello) addLog('✏️ Rinominata: ' + m2.modello + ' → ' + newName);
+    m2.modello = newName;
+    el.textContent = newName;
+    const ln = document.querySelector('#listino-list [data-id="' + machineId + '"] .lcard-name');
+    if (ln) ln.textContent = newName;
+    save();
+  }
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') inp.blur();
+    if (e.key === 'Escape') { committed = true; el.textContent = origName; }
+  });
+}
+
+function changeStato(machineId, val, sel) {
+  const m = db.macchine.find(x => x.id === machineId);
+  if (!m) return;
+  addLog('🔄 ' + m.modello + ': stato → ' + val);
+  m.stato = val;
+  const sc = val === 'Disponibile' ? 'disp' : val === 'Cristiano' ? 'crist' : 'vend';
+  sel.className = 'status-sel ' + sc;
+  const card = sel.closest('.scard');
+  if (card) card.className = 'scard' + (val === 'Cristiano' ? ' c-crist' : val === 'Venduta - da incassare' ? ' c-vend' : '');
+  updateStockStats();
+  save();
+}
+
+function updateStockStats() {
+  const se = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  se('s-tot', db.macchine.length);
+  const tot = db.macchine.reduce((s,m) => s + (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0), 0);
+  se('s-val', tot ? '€' + Math.round(tot) + 'k' : '—');
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER STOCK
+// ══════════════════════════════════════════════════════
+function renderStock() {
+  const q = (document.getElementById('stock-search')||{value:''}).value.toLowerCase();
+  const sortBy = (document.getElementById('stock-sort')||{value:'az'}).value;
+
+  let list = db.macchine.filter(m => !q || m.modello.toLowerCase().includes(q));
+  list = [...list].sort((a,b) => {
+    if (sortBy==='prezzo-desc') return ((parseFloat(b.acq)||0)+(parseFloat(b.spe)||0)) - ((parseFloat(a.acq)||0)+(parseFloat(a.spe)||0));
+    if (sortBy==='prezzo-asc')  return ((parseFloat(a.acq)||0)+(parseFloat(a.spe)||0)) - ((parseFloat(b.acq)||0)+(parseFloat(b.spe)||0));
+    return (a.modello||'').localeCompare(b.modello||'');
+  });
+
+  updateStockStats();
+
+  if (!list.length) {
+    document.getElementById('stock-list').innerHTML = `<div class="empty">📭 ${db.macchine.length===0?'Aggiungi la prima macchina!':'Nessun risultato.'}</div>`;
+    return;
+  }
+
+  document.getElementById('stock-list').innerHTML = list.map((m,i) => {
+    const tot = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
+    return `<div class="scard" data-id="${m.id}">
+      <div class="scard-top">
+        <div class="scard-modello" onclick="editModello(this,'${m.id}')">${m.modello||''}</div>
+        <button class="info-btn" onclick="openDetail('${m.id}')">ⓘ</button>
+      </div>
+      <div class="scard-fields">
+        <div class="sfield" onclick="editSfield(this,'${m.id}','acq','number')">
+          <div class="sf-label">Acquisto k€</div>
+          <div class="sf-val acc">${m.acq||'—'}</div>
+        </div>
+        <div class="sfield" onclick="editSfield(this,'${m.id}','spe','number')">
+          <div class="sf-label">Spese k€</div>
+          <div class="sf-val">${m.spe||'—'}</div>
+        </div>
+        <div class="sfield">
+          <div class="sf-label">Totale k€</div>
+          <div class="sf-val acc">${tot||'—'}</div>
+        </div>
+        <div class="sfield" onclick="editSfield(this,'${m.id}','note','text')">
+          <div class="sf-label">Note</div>
+          <div class="sf-val" style="color:var(--muted);font-weight:500">${m.note||'—'}</div>
+        </div>
+      </div>
+      <div class="scard-actions">
+        <button class="act-btn sell" onclick="openSell('${m.id}')">💰 Vendi</button>
+        <button class="act-btn danger" onclick="deleteMacchina('${m.id}')">🗑 Elimina</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function handleAdd() {
+  if (currentTab === 'fatture') { openFatModal(); return; }
+  if (currentTab === 'fatture') { return; }
+  // Add new blank machine
+  const m = {
+    id: 'm' + Date.now(),
+    modello: 'Nuovo modello',
+    anno: '', ore: '', acq: 0, spe: 0,
+    stato: 'Disponibile', note: '', location: ''
+  };
+  db.macchine.unshift(m);
+  addLog('➕ Aggiunta macchina: ' + m.modello);
+  save();
+  renderStock();
+  // Focus modello of new card
+  setTimeout(() => {
+    const el = document.querySelector('#stock-list .scard:first-child .scard-modello');
+    if (el) editModello(el, m.id);
+  }, 60);
+}
+
+function deleteMacchina(id) {
+  const m = db.macchine.find(x => x.id === id);
+  if (!confirm('Eliminare "' + (m ? m.modello : id) + '"?')) return;
+  addLog('🗑 Eliminata: ' + (m ? m.modello : id));
+  db.macchine = db.macchine.filter(x => x.id !== id);
+  save();
+  renderStock();
+  renderPat();
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER LISTINO
+// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// SELL MODAL
+// ══════════════════════════════════════════════════════
+function openSell(id) {
+  const m = db.macchine.find(x => x.id === id);
+  if (!m) return;
+  sellId = id;
+  const costo = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
+  document.getElementById('sell-name').textContent = m.modello;
+  document.getElementById('sell-cost').textContent = 'Costo totale: ' + fmtK(costo);
+  document.getElementById('sell-invoice').value = '';
+  document.getElementById('sell-cliente').value = '';
+  document.getElementById('sell-price').value = '';
+  document.getElementById('sell-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('sell-note').value = '';
+  document.getElementById('margin-preview').style.display = 'none';
+  document.getElementById('sell-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('sell-invoice').focus(), 150);
+}
+function closeSellModal() { document.getElementById('sell-overlay').classList.remove('open'); }
+
+function updateMarginPreview() {
+  const m = db.macchine.find(x => x.id === sellId);
+  if (!m) return;
+  const costo = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
+  const vend = parseFloat(document.getElementById('sell-price').value) || 0;
+  if (!vend) { document.getElementById('margin-preview').style.display = 'none'; return; }
+  const mar = vend - costo, pct = costo > 0 ? ((mar/costo)*100).toFixed(1) : 0, isPos = mar >= 0;
+  const prev = document.getElementById('margin-preview');
+  prev.style.display = 'block';
+  prev.className = 'margin-preview' + (isPos ? '' : ' neg');
+  document.getElementById('margin-val').className = 'margin-value' + (isPos ? '' : ' neg');
+  document.getElementById('margin-pct').className = 'margin-pct' + (isPos ? '' : ' neg');
+  document.getElementById('margin-val').textContent = (isPos ? '+' : '') + fmtK(mar);
+  document.getElementById('margin-pct').textContent = (isPos ? '+' : '') + pct + '% sul costo';
+}
+
+function confirmSell() {
+  const m = db.macchine.find(x => x.id === sellId);
+  if (!m) return;
+  const nr = document.getElementById('sell-invoice').value.trim();
+  if (!nr) { toast('⚠️ Inserisci il numero fattura', 'err'); return; }
+  const cliente = document.getElementById('sell-cliente').value.trim();
+  if (!cliente) { toast('⚠️ Inserisci il cliente', 'err'); return; }
+  const vend = parseFloat(document.getElementById('sell-price').value);
+  if (!vend) { toast('⚠️ Inserisci il prezzo di vendita', 'err'); return; }
+
+  if (!db.fatture) db.fatture = [];
+
+  const fattura = {
+    id: 'f' + Date.now(),
+    nr,
+    cliente,
+    importo: vend,
+    data: document.getElementById('sell-date').value,
+    note: document.getElementById('sell-note').value.trim(),
+    tipo: 'vendita',
+    // machine info
+    modello: m.modello,
+    acq: m.acq,
+    spe: m.spe,
+    machineId: m.id,
+    // payment status
+    stato: 'attesa',       // attesa | parziale | pagata
+    acconto: 0             // for partial payments
+  };
+
+  db.fatture.unshift(fattura);
+  db.macchine = db.macchine.filter(x => x.id !== sellId);
+  addLog('💰 Venduta: ' + m.modello + ' — Fattura ' + nr + ' — ' + cliente + ' — ' + fmtK(vend));
+  closeSellModal();
+  renderAll();
+  save();
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER VENDUTE
+// ══════════════════════════════════════════════════════
+function deleteVenduta(id) {
+  if (!confirm('Rimuovere questa vendita?')) return;
+  db.vendute = db.vendute.filter(x => x.id !== id);
+  save();
+  renderVendute();
+  toast('✓ Rimosso', 'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// ANDAMENTO — stacked bar
+// ══════════════════════════════════════════════════════
+function drawBarLabels(chart) {
+  const ctx = chart.ctx;
+  chart.data.datasets.forEach((dataset, di) => {
+    const meta = chart.getDatasetMeta(di);
+    meta.data.forEach((bar, i) => {
+      const val = dataset.data[i];
+      if (!val) return;
+      ctx.save();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 9px Barlow, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const txt = '€' + Math.round(val) + 'k';
+      // Only draw if bar is tall enough
+      const height = Math.abs(bar.height || (bar.base - bar.y));
+      if (height > 18) {
+        ctx.fillText(txt, bar.x, bar.y + height / 2);
+      }
+      ctx.restore();
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// PATRIMONIO
+// ══════════════════════════════════════════════════════
+function renderPat() {
+  const totS = db.saldi.reduce((s,x) => s + (parseFloat(x.val)||0), 0);
+  const totC = db.crediti.reduce((s,x) => s + (parseFloat(x.val)||0), 0);
+  const totM = db.macchine.reduce((s,m) => s + (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0), 0);
+
+  // Da incassare: fatture parziali o in attesa
+  const fatDaInc = (db.fatture||[]).filter(f => f.stato === 'attesa' || f.stato === 'parziale');
+  const totDaInc = fatDaInc.reduce((s,f) => {
+    if (f.stato === 'attesa') return s + (parseFloat(f.importo)||0);
+    if (f.stato === 'parziale') return s + (parseFloat(f.importo)||0) - (parseFloat(f.acconto)||0);
+    return s;
+  }, 0);
+
+  const grand = totS + totC + totM + totDaInc;
+
+  function patRow(voce, val, id, type) {
+    const isNeg = parseFloat(val) < 0;
+    return `<div class="pat-edit-row">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+        <button class="pat-del-btn" onclick="delete${type}('${id}')" title="Rimuovi">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <span class="pl" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${voce}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <span style="color:var(--muted);font-size:.75rem">€</span>
+        <input class="pat-edit-input${isNeg?' neg':''}" type="number" value="${val}" step="0.5"
+          inputmode="decimal" onchange="update${type}('${id}',this.value)"
+          style="${isNeg?'color:var(--red)':''}">
+        <span style="color:var(--muted);font-size:.75rem">k</span>
+      </div>
+    </div>`;
+  }
+
+  let html = '';
+
+  // ── LIQUIDITÀ ──
+  html += `<div class="sec-title" style="margin-top:4px">💳 Liquidità</div>
+  <div class="pat-card">
+    ${db.saldi.map(s => patRow(s.voce, s.val, s.id, 'Saldo')).join('')}
+    <div class="pat-row tot"><div class="pl b">Totale Liquidità</div><div class="pv acc">${fmtK(totS)}</div></div>
+    <button class="pat-add-btn" onclick="addSaldo()">Aggiungi voce</button>
+  </div>`;
+
+  // ── CREDITI ──
+  html += `<div class="sec-title">📋 Crediti Vari</div>
+  <div class="pat-card">
+    ${db.crediti.map(c => patRow(c.voce, c.val, c.id, 'Credito')).join('')}
+    <div class="pat-row tot"><div class="pl b">Totale Crediti</div><div class="pv acc">${fmtK(totC)}</div></div>
+    <button class="pat-add-btn" onclick="addCredito()">Aggiungi credito</button>
+  </div>`;
+
+  // ── DA INCASSARE (fatture parziali/attesa) ──
+  if (fatDaInc.length > 0) {
+    html += `<div class="sec-title">⏳ Da Incassare</div>
+    <div class="pat-card">
+      ${fatDaInc.map(f => {
+        const resto = f.stato==='parziale'
+          ? (parseFloat(f.importo)||0) - (parseFloat(f.acconto)||0)
+          : (parseFloat(f.importo)||0);
+        return `<div class="pat-row">
+          <div>
+            <div class="pl">${f.nr} — ${f.cliente||'—'}</div>
+            ${f.modello?`<div style="font-size:.7rem;color:var(--muted)">🚜 ${f.modello}</div>`:''}
+            ${f.stato==='parziale'?`<div style="font-size:.7rem;color:#b8860b">Acconto ricevuto: ${fmtK(parseFloat(f.acconto)||0)}</div>`:''}
+          </div>
+          <div class="pv" style="color:var(--red)">${fmtK(resto)}</div>
+        </div>`;
+      }).join('')}
+      <div class="pat-row tot"><div class="pl b">Totale da incassare</div><div class="pv" style="color:var(--red)">${fmtK(totDaInc)}</div></div>
+    </div>`;
+  }
+
+  // ── STOCK ──
+  html += `<div class="sec-title">🚜 Valore Stock</div>
+  <div class="pat-card">
+    <div class="pat-row">
+      <div class="pl">Macchine attive (${db.macchine.length})</div>
+      <div class="pv acc">${fmtK(totM)}</div>
+    </div>
+  </div>`;
+
+  // ── GRAND TOTAL ──
+  html += `<div class="grand-box" style="margin-top:12px">
+    <div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;color:#b8860b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px">Patrimonio Totale</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:var(--orange);line-height:1">${fmtK(grand)}</div>
+    </div>
+    <div style="text-align:right;font-size:.75rem;color:var(--muted);line-height:1.7">
+      <div>Liquidità: ${fmtK(totS)}</div>
+      <div>Crediti: ${fmtK(totC)}</div>
+      ${totDaInc>0?`<div style="color:var(--red)">Da incassare: ${fmtK(totDaInc)}</div>`:''}
+      <div>Stock: ${fmtK(totM)}</div>
+    </div>
+  </div>`;
+
+
+  // ── STORICO ──
+  const hist = db.patrimHistory ? db.patrimHistory.slice().reverse() : [];
+  html += `<div class="sec-title" style="margin-top:20px">📊 Storico Patrimonio</div>`;
+  if (hist.length === 0) {
+    html += `<div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;color:var(--muted);font-size:.85rem;box-shadow:var(--shadow)">
+      Il primo snapshot verrà salvato automaticamente<br>nei giorni feriali alle 19:00
+    </div>`;
+  } else {
+    html += `<div class="pat-card" style="overflow:hidden">`;
+    hist.forEach((h, i) => {
+      const d = new Date(h.date);
+      const label = d.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit'});
+      const isFirst = i === 0;
+      const tot = h.totale || (h.liq + h.stock + (h.daInc||0) + (h.cred||0));
+      html += `<div class="pat-row" style="${isFirst?'background:var(--orange-light)':''}">
+        <div>
+          <div class="pl${isFirst?' b':''}">📅 ${label}${isFirst?' <span style="font-size:.68rem;color:var(--orange);font-weight:700"> · ultimo</span>':''}</div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:1px">
+            Liq: ${fmtK(h.liq)} · Stock: ${fmtK(h.stock)}${h.daInc?` · Da inc: ${fmtK(h.daInc)}`:''}
+          </div>
+        </div>
+        <div class="pv${isFirst?' acc':''}">${fmtK(tot)}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  document.getElementById('pat-content').innerHTML = html;
+}
+
+function updateSaldo(id, val) {
+  const s = db.saldi.find(x => x.id === id);
+  if (s) { addLog('💳 Saldo ' + s.voce + ': ' + val + 'k'); s.val = parseFloat(val) || 0; }
+  save();
+  renderPat();
+  toast('✓ Salvato', 'ok');
+}
+function updateCredito(id, val) {
+  const c = db.crediti.find(x => x.id === id);
+  if (c) { c.val = parseFloat(val) || 0; }
+  save();
+  renderPat();
+  toast('✓ Salvato', 'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// FATTURE — sorted by nr
+// ══════════════════════════════════════════════════════
+function saveFattura() {
+  const nr = document.getElementById('fat-nr').value.trim();
+  const cliente = document.getElementById('fat-cliente').value.trim();
+  if (!nr || !cliente) { toast('⚠️ Nr fattura e cliente obbligatori', 'err'); return; }
+  const f = {
+    id: 'f' + Date.now(),
+    nr,
+    data: document.getElementById('fat-data').value,
+    cliente,
+    importo: parseFloat(document.getElementById('fat-importo').value) || 0,
+    tipo: document.getElementById('fat-tipo').value,
+    note: document.getElementById('fat-note').value.trim(),
+    pagata: false
+  };
+  if (!db.fatture) db.fatture = [];
+  db.fatture.push(f);
+  addLog('🧾 Fattura ' + nr + ' — ' + cliente + ' €' + f.importo);
+  save();
+  closeFatModal();
+  renderFatture();
+  toast('✓ Fattura salvata', 'ok');
+}
+
+function togglePagata(id) {
+  const f = db.fatture.find(x => x.id === id);
+  if (!f) return;
+  f.pagata = !f.pagata;
+  addLog((f.pagata ? '✅' : '↩️') + ' Fattura ' + f.nr + ': ' + (f.pagata ? 'pagata' : 'rimessa in attesa'));
+  save();
+  renderFatture();
+}
+
+function deleteFattura(id) {
+  const f = db.fatture.find(x => x.id === id);
+  if (!confirm('Eliminare fattura ' + (f ? f.nr : id) + '?')) return;
+  db.fatture = db.fatture.filter(x => x.id !== id);
+  save();
+  renderFatture();
+  toast('✓ Eliminata', 'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════════════════
+function setLogFilter(el, f) {
+  document.querySelectorAll('.filter-chip-bar .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  logFilter = f;
+  renderLog();
+}
+function renderLog() {
+  const entries = (db.log||[]).filter(e => logFilter === 'tutti' || e.user === logFilter);
+  if (!entries.length) { document.getElementById('log-list').innerHTML = '<div class="empty">Nessuna modifica registrata.</div>'; return; }
+  document.getElementById('log-list').innerHTML = entries.map(e => {
+    const cls = e.user === 'Francy' ? 'francy' : 'raffaele';
+    return `<div class="log-entry"><div class="log-top"><span class="log-user ${cls}">${e.user}</span><span class="log-time">${e.display}</span></div><div class="log-action">${e.action}</div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// PRINT PDF
+// ══════════════════════════════════════════════════════
+function printStock() {
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) { toast('⚠️ Libreria PDF non caricata, riprova','err'); return; }
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const W = 210, margin = 14;
+  let y = 0;
+
+  function fK(v){ const n=parseFloat(v); if(!n) return '—'; return '€'+n.toLocaleString('it-IT',{maximumFractionDigits:1})+'k'; }
+
+  // ── HEADER ──
+  doc.setFillColor(26,26,26);
+  doc.rect(0,0,W,22,'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(20);
+  doc.setTextColor(245,166,35);
+  doc.text('ASTRAEUS FZE', margin, 14);
+  doc.setFontSize(9);
+  doc.setTextColor(180,180,180);
+  doc.text('Aggiornato al ' + dateStr, margin, 20);
+  doc.text(db.macchine.length + ' macchine totali', W-margin, 14, {align:'right'});
+  y = 30;
+
+  // ── SECTION HELPER ──
+  function drawSection(title, color, list, total) {
+    if(!list.length) return;
+    doc.setFillColor(...color);
+    doc.rect(margin, y, W-margin*2, 8, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255,255,255);
+    doc.text(title + ' (' + list.length + ')', margin+3, y+5.5);
+    doc.text(fK(total), W-margin-3, y+5.5, {align:'right'});
+    y += 8;
+    doc.autoTable({
+      startY: y,
+      margin: {left:margin, right:margin},
+      head: [['Modello','Acquisto','Spese','Totale']],
+      body: list.map(m => {
+        const tot = (parseFloat(m.acq)||0)+(parseFloat(m.spe)||0);
+        return [m.modello, fK(m.acq), m.spe?fK(m.spe):'—', fK(tot)];
+      }),
+      styles: {fontSize:8.5, cellPadding:2.5, font:'helvetica', textColor:[26,26,26]},
+      headStyles: {fillColor:[240,239,235], textColor:[100,100,100], fontStyle:'bold', fontSize:7.5},
+      columnStyles: {
+        0: {cellWidth:'auto'},
+        1: {cellWidth:28, halign:'right', textColor:[212,130,10], fontStyle:'bold'},
+        2: {cellWidth:24, halign:'right', textColor:[100,100,100]},
+        3: {cellWidth:28, halign:'right', textColor:[212,130,10], fontStyle:'bold'}
+      },
+      alternateRowStyles: {fillColor:[250,250,248]},
+      tableLineColor:[220,220,215], tableLineWidth:0.2,
+    });
+    y = doc.lastAutoTable.finalY + 5;
+    if (y > 260) { doc.addPage(); y = 15; }
+  }
+
+  // ── DA INCASSARE (fatture) HELPER ──
+  function drawDaIncassare(fatList) {
+    if (!fatList.length) return;
+    const totDaInc = fatList.reduce((s,f) => {
+      return s + (f.stato==='parziale'
+        ? (parseFloat(f.importo)||0) - (parseFloat(f.acconto)||0)
+        : (parseFloat(f.importo)||0));
+    }, 0);
+    doc.setFillColor(192,57,43);
+    doc.rect(margin, y, W-margin*2, 8, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255,255,255);
+    doc.text('DA INCASSARE (' + fatList.length + ')', margin+3, y+5.5);
+    doc.text(fK(totDaInc), W-margin-3, y+5.5, {align:'right'});
+    y += 8;
+    doc.autoTable({
+      startY: y,
+      margin: {left:margin, right:margin},
+      head: [['Nr Fattura','Cliente','Macchina','Venduta a','Acconto','Da incassare']],
+      body: fatList.map(f => {
+        const importo = parseFloat(f.importo)||0;
+        const acconto = parseFloat(f.acconto)||0;
+        const resto = f.stato==='parziale' ? importo-acconto : importo;
+        return [
+          f.nr||'—',
+          f.cliente||'—',
+          f.modello||'—',
+          fK(importo),
+          f.stato==='parziale' ? fK(acconto) : '—',
+          fK(resto)
+        ];
+      }),
+      styles: {fontSize:8, cellPadding:2.5, font:'helvetica', textColor:[26,26,26]},
+      headStyles: {fillColor:[240,239,235], textColor:[100,100,100], fontStyle:'bold', fontSize:7.5},
+      columnStyles: {
+        0: {cellWidth:22},
+        1: {cellWidth:'auto'},
+        2: {cellWidth:'auto'},
+        3: {cellWidth:22, halign:'right', textColor:[212,130,10], fontStyle:'bold'},
+        4: {cellWidth:22, halign:'right', textColor:[100,100,100]},
+        5: {cellWidth:26, halign:'right', textColor:[192,57,43], fontStyle:'bold'}
+      },
+      alternateRowStyles: {fillColor:[253,236,234]},
+      tableLineColor:[220,220,215], tableLineWidth:0.2,
+    });
+    y = doc.lastAutoTable.finalY + 5;
+    if (y > 260) { doc.addPage(); y = 15; }
+  }
+
+  // ── DATA ──
+  const tuttiMacchine = [...db.macchine].sort((a,b)=>(a.modello||'').localeCompare(b.modello||''));
+  const fatDaInc = (db.fatture||[]).filter(f=>f.stato==='attesa'||f.stato==='parziale')
+    .sort((a,b)=>(a.nr||'').localeCompare(b.nr||'',undefined,{numeric:true}));
+
+  const totTutti = tuttiMacchine.reduce((s,m)=>s+(parseFloat(m.acq)||0)+(parseFloat(m.spe)||0),0);
+  const totDaInc = fatDaInc.reduce((s,f)=>s+(f.stato==='parziale'?(parseFloat(f.importo)||0)-(parseFloat(f.acconto)||0):(parseFloat(f.importo)||0)),0);
+
+  drawSection('STOCK MACCHINE', [26,26,26], tuttiMacchine, totTutti);
+  drawDaIncassare(fatDaInc);
+
+  // ── PATRIMONIO ──
+  if (y > 220) { doc.addPage(); y = 15; }
+  y += 4;
+  doc.setFillColor(26,26,26);
+  doc.rect(margin, y, W-margin*2, 8, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.setTextColor(245,166,35);
+  doc.text('RIEPILOGO PATRIMONIO', margin+3, y+5.5);
+  y += 8;
+
+  const totStock = db.macchine.reduce((s,m)=>s+(parseFloat(m.acq)||0)+(parseFloat(m.spe)||0),0);
+  const totLiq   = db.saldi.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+  const totCred  = db.crediti.reduce((s,x)=>s+(parseFloat(x.val)||0),0);
+  const totPatr  = totStock + totLiq + totCred + totDaInc;
+
+  const patRows = [
+    ['Valore Stock', fK(totStock)],
+    ...db.saldi.map(s=>[s.voce, fK(s.val)]),
+    ...db.crediti.map(c=>['Credito: '+c.voce, fK(c.val)]),
+    ...(totDaInc>0 ? [['Da incassare (fatture)', fK(totDaInc)]] : []),
+  ];
+
+  doc.autoTable({
+    startY: y,
+    margin: {left:margin, right:margin},
+    body: patRows,
+    styles: {fontSize:8.5, cellPadding:2.5, font:'helvetica', textColor:[26,26,26]},
+    columnStyles: {
+      0: {cellWidth:'auto'},
+      1: {cellWidth:40, halign:'right', fontStyle:'bold', textColor:[26,95,168]}
+    },
+    alternateRowStyles: {fillColor:[250,250,248]},
+    tableLineColor:[220,220,215], tableLineWidth:0.2,
+  });
+  y = doc.lastAutoTable.finalY;
+
+  // Total row
+  doc.setFillColor(255,248,236);
+  doc.rect(margin, y, W-margin*2, 10, 'F');
+  doc.setDrawColor(232,184,75);
+  doc.setLineWidth(0.5);
+  doc.rect(margin, y, W-margin*2, 10);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(212,130,10);
+  doc.text('PATRIMONIO TOTALE', margin+4, y+7);
+  doc.text(fK(totPatr), W-margin-4, y+7, {align:'right'});
+
+  // ── FOOTER ──
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(180,180,180);
+    doc.setFont('helvetica','normal');
+    doc.text('Astraeus FZE — ' + dateStr, margin, 292);
+    doc.text('Pag.'+i+'/'+pageCount, W-margin, 292, {align:'right'});
+  }
+
+  doc.save('Astraeus_Stock_' + dateStr.replace(/\//g,'-') + '.pdf');
+  toast('✓ PDF scaricato','ok');
+}
+
+function printListino() {
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) { toast('⚠️ Libreria PDF non caricata','err'); return; }
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const W = 210, margin = 14;
+
+  function fK(v){ const n=parseFloat(v); if(!n) return '—'; return '€'+n.toLocaleString('it-IT',{maximumFractionDigits:1})+'k'; }
+
+  // Header
+  doc.setFillColor(26,26,26);
+  doc.rect(0,0,W,22,'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(20);
+  doc.setTextColor(245,166,35);
+  doc.text('ASTRAEUS — EQUIPMENT LIST', margin, 14);
+  doc.setFontSize(9);
+  doc.setTextColor(180,180,180);
+  doc.text(dateStr, margin, 20);
+  doc.text(db.macchine.length + ' macchine', W-margin, 14, {align:'right'});
+
+  const list = [...db.macchine].sort((a,b) => (a.modello||'').localeCompare(b.modello||''));
+
+  doc.autoTable({
+    startY: 28,
+    margin: {left:margin, right:margin},
+    head: [['Modello','Anno','Ore','Location','Costo']],
+    body: list.map(m => {
+      const tot = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
+      return [
+        m.modello || '—',
+        m.anno || '—',
+        m.ore ? Number(m.ore).toLocaleString('it-IT') : '—',
+        m.location || '—',
+        fK(tot)
+      ];
+    }),
+    styles: {fontSize:8.5, cellPadding:2.8, font:'helvetica', textColor:[26,26,26]},
+    headStyles: {fillColor:[26,26,26], textColor:[245,166,35], fontStyle:'bold', fontSize:8},
+    columnStyles: {
+      0: {cellWidth:'auto', fontStyle:'bold'},
+      1: {cellWidth:18, halign:'center'},
+      2: {cellWidth:22, halign:'right'},
+      3: {cellWidth:'auto'},
+      4: {cellWidth:28, halign:'right', textColor:[212,130,10], fontStyle:'bold'}
+    },
+    alternateRowStyles: {fillColor:[250,250,248]},
+    tableLineColor:[220,220,215], tableLineWidth:0.2,
+  });
+
+  // Footer
+  const pages = doc.internal.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(180,180,180);
+    doc.setFont('helvetica','normal');
+    doc.text('Astraeus FZE — Listino ' + dateStr, margin, 292);
+    doc.text('Pag.'+i+'/'+pages, W-margin, 292, {align:'right'});
+  }
+
+  doc.save('Astraeus_Listino_' + dateStr.replace(/\//g,'-') + '.pdf');
+  toast('✓ Listino scaricato','ok');
+}
+
+
+
+
+// ── FATTURE ──────────────────────────────────────────────
+function renderFatture() {
+  if (!db.fatture) db.fatture = [];
+  const q = (document.getElementById('fat-search')||{value:''}).value.toLowerCase();
+  const filt = (document.getElementById('fat-filter')||{value:'tutti'}).value;
+
+  let list = [...db.fatture].sort((a,b) => (a.nr||'').localeCompare(b.nr||'', undefined, {numeric:true}));
+  list = list.filter(f => {
+    const mq = !q || (f.nr||'').toLowerCase().includes(q) || (f.cliente||'').toLowerCase().includes(q) || (f.modello||'').toLowerCase().includes(q);
+    const mf = filt==='tutti' || f.stato===filt;
+    return mq && mf;
+  });
+
+  const pagate  = db.fatture.filter(f=>f.stato==='pagata');
+  const parziali= db.fatture.filter(f=>f.stato==='parziale');
+  const attesa  = db.fatture.filter(f=>f.stato==='attesa');
+  const totInc  = pagate.reduce((s,f)=>s+(parseFloat(f.importo)||0),0);
+  const totAtt  = attesa.reduce((s,f)=>s+(parseFloat(f.importo)||0),0);
+  const totParz = parziali.reduce((s,f)=>s+(parseFloat(f.importo)||0)-(parseFloat(f.acconto)||0),0);
+
+  const se = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  se('fat-tot', db.fatture.length);
+  se('fat-incassato', fmtK(totInc));
+  se('fat-attesa', fmtK(totAtt));
+  se('fat-parziale', fmtK(totParz));
+
+  const el = document.getElementById('fatture-list'); if(!el) return;
+  if(!list.length){ el.innerHTML='<div class="empty">Nessuna fattura trovata.</div>'; return; }
+
+  el.innerHTML = list.map((f,i) => {
+    const costo = (parseFloat(f.acq)||0)+(parseFloat(f.spe)||0);
+    const vend  = parseFloat(f.importo)||0;
+    const acc   = parseFloat(f.acconto)||0;
+    const margine = vend-costo;
+    const isPos = margine>=0;
+    const pctM  = costo>0?((margine/costo)*100).toFixed(1):0;
+    const daRic = f.stato==='parziale'?vend-acc:(f.stato==='attesa'?vend:0);
+
+    const stMap = {
+      pagata:   {color:'var(--green)',  label:'✅ Pagata'},
+      parziale: {color:'#b8860b',       label:'🟡 Parziale'},
+      attesa:   {color:'var(--red)',     label:'🔴 Da pagare'}
+    };
+    const st = stMap[f.stato]||stMap.attesa;
+
+    const accontoRow = f.stato==='parziale' ? `
+      <div style="display:flex;align-items:center;gap:6px;padding:0 13px 10px;font-size:.78rem;color:var(--muted2)">
+        <span>Acconto:</span>
+        <input type="number" value="${acc}" step="0.5" inputmode="decimal"
+          style="width:65px;border:none;border-bottom:1px solid var(--border);background:transparent;font-size:.82rem;font-weight:700;color:#b8860b;outline:none;text-align:right"
+          onchange="updateAcconto('${f.id}',this.value)">
+        <span>k€ — da incassare: ${fmtK(daRic)}</span>
+      </div>` : '';
+
+    return `<div class="fat-card" style="animation-delay:${Math.min(i,8)*.03}s;border-left:3px solid ${st.color}">
+      <div class="fat-head">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+            <span class="fat-nr">${f.nr}</span>
+            <span class="fat-cliente">${f.cliente||'—'}</span>
+          </div>
+          ${f.modello?`<div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">🚜 ${f.modello}</div>`:''}
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <span class="fat-importo">${fmtK(vend)}</span>
+            ${costo?`<span style="font-size:.75rem;color:var(--muted)">Costo: ${fmtK(costo)}</span>`:''}
+            ${costo?`<span style="font-size:.75rem;font-weight:700;color:${isPos?'var(--green)':'var(--red)'}">${isPos?'+':''}${fmtK(margine)} (${isPos?'+':''}${pctM}%)</span>`:''}
+            ${f.data?`<span class="fat-data">📅 ${fmtDate(f.data)}</span>`:''}
+          </div>
+          ${f.note?`<div style="font-size:.72rem;color:var(--muted);margin-top:3px">📝 ${f.note}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;padding-left:10px">
+          <span style="background:${st.color==='var(--green)'?'var(--green-bg)':st.color==='var(--red)'?'var(--red-bg)':'rgba(255,193,7,.15)'};color:${st.color};border-radius:20px;padding:3px 10px;font-size:.7rem;font-weight:700;white-space:nowrap">${st.label}</span>
+          <div style="display:flex;gap:4px">
+            ${f.stato==='attesa'?`<button class="fat-action-btn" onclick="setStatoParziale('${f.id}')">🟡</button><button class="fat-action-btn green" onclick="setStatoPagata('${f.id}')">✅</button>`:''}
+            ${f.stato==='parziale'?`<button class="fat-action-btn green" onclick="setStatoPagata('${f.id}')">✅ Pagata</button>`:''}
+            <button class="fat-action-btn del" onclick="deleteFattura('${f.id}')">🗑</button>
+          </div>
+        </div>
+      </div>
+      ${accontoRow}
+    </div>`;
+  }).join('');
+}
+
+async function setStatoParziale(id) {
+  const f=db.fatture.find(x=>x.id===id); if(!f) return;
+  f.stato='parziale'; if(!f.acconto) f.acconto=0;
+  addLog('🟡 Fattura '+f.nr+': pagamento parziale');
+  renderFatture(); renderPat(); await save();
+}
+
+async function setStatoPagata(id) {
+  const f=db.fatture.find(x=>x.id===id); if(!f) return;
+  f.stato='pagata';
+  addLog('✅ Fattura '+f.nr+' pagata completamente');
+  renderFatture(); renderPat(); await save();
+}
+
+async function updateAcconto(id,val) {
+  const f=db.fatture.find(x=>x.id===id); if(!f) return;
+  f.acconto=parseFloat(val)||0;
+  renderFatture(); renderPat(); await save();
+}
+
+async function deleteFattura(id) {
+  const f=db.fatture.find(x=>x.id===id);
+  if(!confirm('Eliminare fattura '+(f?f.nr:id)+'?')) return;
+  db.fatture=db.fatture.filter(x=>x.id!==id);
+  renderFatture(); renderPat(); await save();
+}
+
+// ── PATRIMONIO ADD/DELETE ──────────────────────────────
+async function addSaldo() {
+  const voce=prompt('Nome voce (es. Conto XYZ):'); if(!voce||!voce.trim()) return;
+  const valStr=prompt('Importo in k€ (negativo per uscita):'); if(valStr===null) return;
+  const val=parseFloat(valStr)||0;
+  db.saldi.push({id:'s'+Date.now(),voce:voce.trim(),val});
+  addLog('➕ Saldo aggiunto: '+voce.trim()+' €'+val+'k');
+  renderPat(); await save();
+}
+
+async function deleteSaldo(id) {
+  const s=db.saldi.find(x=>x.id===id); if(!s) return;
+  if(!confirm('Rimuovere "'+s.voce+'"?')) return;
+  db.saldi=db.saldi.filter(x=>x.id!==id);
+  addLog('🗑 Saldo rimosso: '+s.voce);
+  renderPat(); await save();
+}
+
+async function addCredito() {
+  const voce=prompt('Nome credito:'); if(!voce||!voce.trim()) return;
+  const valStr=prompt('Importo in k€:'); if(valStr===null) return;
+  const val=parseFloat(valStr)||0;
+  db.crediti.push({id:'c'+Date.now(),voce:voce.trim(),val});
+  addLog('➕ Credito aggiunto: '+voce.trim()+' €'+val+'k');
+  renderPat(); await save();
+}
+
+async function deleteCredito(id) {
+  const c=db.crediti.find(x=>x.id===id); if(!c) return;
+  if(!confirm('Rimuovere "'+c.voce+'"?')) return;
+  db.crediti=db.crediti.filter(x=>x.id!==id);
+  addLog('🗑 Credito rimosso: '+c.voce);
+  renderPat(); await save();
+}
+
+// ══════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════
+
+// ── DETAIL PANEL ──────────────────────────────────────────
+let detailId = null;
+
+function openDetail(id) {
+  const m = db.macchine.find(x => x.id === id);
+  if (!m) return;
+  detailId = id;
+  const costo = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
+  document.getElementById('dp-title').textContent = m.modello;
+  document.getElementById('dp-sub').textContent = 'Costo totale: ' + fmtK(costo);
+  document.getElementById('dp-grid').innerHTML = `
+    <div class="dp-field" onclick="editDetailField(this,'${id}','anno','number')">
+      <div class="dp-field-label">Anno</div>
+      <div class="dp-field-val">${m.anno||'—'}</div>
+    </div>
+    <div class="dp-field" onclick="editDetailField(this,'${id}','ore','number')">
+      <div class="dp-field-label">Ore lavorate</div>
+      <div class="dp-field-val">${m.ore ? Number(m.ore).toLocaleString('it-IT') : '—'}</div>
+    </div>
+    <div class="dp-field" onclick="editDetailField(this,'${id}','location','text')" style="grid-column:1/-1">
+      <div class="dp-field-label">Location</div>
+      <div class="dp-field-val">${m.location||'—'}</div>
+    </div>
+    <div class="dp-field" onclick="editDetailField(this,'${id}','acq','number')">
+      <div class="dp-field-label">Acquisto k€</div>
+      <div class="dp-field-val acc">${m.acq||'—'}</div>
+    </div>
+    <div class="dp-field" onclick="editDetailField(this,'${id}','spe','number')">
+      <div class="dp-field-label">Spese k€</div>
+      <div class="dp-field-val">${m.spe||'—'}</div>
+    </div>
+    <div class="dp-field" style="grid-column:1/-1">
+      <div class="dp-field-label">Totale costo</div>
+      <div class="dp-field-val acc">${fmtK(costo)}</div>
+    </div>
+    <div class="dp-field" onclick="editDetailField(this,'${id}','note','text')" style="grid-column:1/-1">
+      <div class="dp-field-label">Note</div>
+      <div class="dp-field-val" style="color:var(--muted)">${m.note||'—'}</div>
+    </div>
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-overlay').classList.remove('open');
+  detailId = null;
+}
+
+function editDetailField(el, id, field, type) {
+  const m = db.macchine.find(x => x.id === id); if (!m) return;
+  const valEl = el.querySelector('.dp-field-val');
+  makeEditable(valEl, m, field, type, () => {
+    // Refresh detail panel title if modello changed
+    if (field === 'acq' || field === 'spe') {
+      const costo = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
+      document.getElementById('dp-sub').textContent = 'Costo totale: ' + fmtK(costo);
+    }
+    renderStock();
+  });
+}
+
+document.getElementById('detail-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('detail-overlay')) closeDetail();
+});
+
+
+// ── CURRENCY ──────────────────────────────────────────────
+const CURRENCY_SYMBOLS = { AED: 'AED ', EUR: '€', USD: '$' };
+let currentCurrency = 'AED';
+
+function setCurrency(code, btn) {
+  currentCurrency = code;
+  document.querySelectorAll('.curr-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAll();
+}
+
+// Override fmtK to use current currency
+function fmtK(v) {
+  const n = parseFloat(v);
+  if (!n) return '—';
+  const sym = CURRENCY_SYMBOLS[currentCurrency] || currentCurrency + ' ';
+  return sym + n.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:1}) + 'k';
+}
+
+let toastTimer;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Close modals on bg click
+document.getElementById('sell-overlay').addEventListener('click', e => { if(e.target===document.getElementById('sell-overlay')) closeSellModal(); });
+
+</script>
+</body>
+</html>  <!-- ══ FATTURE ══ -->
+  <div class="page" id="page-fatture">
+    <div class="page-inner">
+
+      <!-- Summary stats -->
+      <div class="fatture-summary">
+        <div class="fat-stat neu"><div class="fsv" id="fat-tot">0</div><div class="fsl">Totale</div></div>
+        <div class="fat-stat green"><div class="fsv" id="fat-incassato">€0</div><div class="fsl">Incassato</div></div>
+        <div class="fat-stat red"><div class="fsv" id="fat-attesa">€0</div><div class="fsl">Da incassare</div></div>
+        <div class="fat-stat yellow"><div class="fsv" id="fat-parziale">€0</div><div class="fsl">Parziale</div></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="table-toolbar" style="margin-bottom:12px">
+        <input class="tbl-search" id="fat-search" placeholder="🔍 Nr fattura, cliente..." oninput="renderFatture()">
+        <select class="sort-select" id="fat-filter" onchange="renderFatture()" style="flex-shrink:0">
+          <option value="tutti">Tutte</option>
+          <option value="pagata">✅ Pagate</option>
+          <option value="parziale">🟡 Parziale</option>
+          <option value="attesa">🔴 Da pagare</option>
+        </select>
+      </div>
+
+      <div id="fatture-list"><div class="empty">Nessuna fattura ancora.</div></div>
+    </div>
+  </div>
+
+
