@@ -553,6 +553,40 @@ header{box-shadow:0 1px 0 var(--border),0 2px 8px rgba(0,0,0,.04)}
 .curr-btn:active{transform:scale(.93)}
 .curr-label{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 
+
+/* ── ASTRAEUS MULTI-CURRENCY STATS ── */
+.astr-stats{max-width:680px;margin:0 auto 14px;display:flex;flex-direction:column;gap:10px}
+.astr-stat-main{text-align:center;padding:4px 0 2px}
+.astr-count{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:900;color:var(--orange);line-height:1}
+.astr-count-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-top:2px}
+.astr-currencies{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.astr-curr-card{background:var(--surf);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 10px;text-align:center;box-shadow:var(--shadow);transition:box-shadow .2s ease,transform .15s ease}
+.astr-curr-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-1px)}
+.astr-curr-card.aed{border-color:#c8960a;background:linear-gradient(135deg,#fdf5e0,#fff)}
+.astr-curr-card.eur{border-color:#1a3a6b;background:linear-gradient(135deg,#e8edf8,#fff)}
+.astr-curr-card.usd{border-color:#1a7a3e;background:linear-gradient(135deg,#e8f5ee,#fff)}
+.astr-curr-sym{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;color:var(--muted)}
+.astr-curr-card.aed .astr-curr-sym{color:#c8960a}
+.astr-curr-card.eur .astr-curr-sym{color:#1a3a6b}
+.astr-curr-card.usd .astr-curr-sym{color:#1a7a3e}
+.astr-curr-val{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:var(--text)}
+.astr-curr-card.aed .astr-curr-val{color:#c8960a}
+.astr-curr-card.eur .astr-curr-val{color:#1a3a6b}
+.astr-curr-card.usd .astr-curr-val{color:#1a7a3e}
+
+/* Currency badge on cards */
+.curr-badge{display:inline-block;border-radius:6px;padding:1px 7px;font-size:.65rem;font-weight:800;letter-spacing:.5px;flex-shrink:0}
+.curr-badge.aed{background:#fdf5e0;color:#c8960a;border:1px solid #c8960a}
+.curr-badge.eur{background:#e8edf8;color:#1a3a6b;border:1px solid #1a3a6b}
+.curr-badge.usd{background:#e8f5ee;color:#1a7a3e;border:1px solid #1a7a3e}
+
+/* Currency select in form */
+.form-currency-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.curr-radio-group{display:flex;gap:6px;padding:8px 0 2px}
+.curr-radio{flex:1;display:none}
+.curr-radio-label{flex:1;text-align:center;padding:9px 4px;background:var(--surf2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s ease;font-family:'Barlow',sans-serif;color:var(--text2)}
+.curr-radio:checked + .curr-radio-label{background:var(--orange-light);border-color:var(--orange);color:var(--orange)}
+
 </style>
 </head>
 <body>
@@ -592,22 +626,28 @@ header{box-shadow:0 1px 0 var(--border),0 2px 8px rgba(0,0,0,.04)}
     </div>
   </div>
 
-  <!-- CURRENCY BAR -->
-  <div id="currency-bar" style="background:var(--surf);border-bottom:1px solid var(--border);padding:8px 0">
-    <div class="currency-bar">
-      <span class="curr-label">Valuta:</span>
-      <button class="curr-btn active" onclick="setCurrency('AED',this)">AED</button>
-      <button class="curr-btn" onclick="setCurrency('EUR',this)">€ EUR</button>
-      <button class="curr-btn" onclick="setCurrency('USD',this)">$ USD</button>
-    </div>
-  </div>
-
   <!-- STOCK -->
   <div class="page active" id="page-stock">
     <div class="page-inner">
-      <div class="stats-row">
-        <div class="sc"><div class="sv" id="s-tot">0</div><div class="sl">Macchine</div></div>
-        <div class="sc"><div class="sv" id="s-val">—</div><div class="sl">Valore Stock</div></div>
+      <div class="astr-stats">
+        <div class="astr-stat-main">
+          <div class="astr-count" id="s-tot">0</div>
+          <div class="astr-count-label">macchine in stock</div>
+        </div>
+        <div class="astr-currencies">
+          <div class="astr-curr-card aed">
+            <div class="astr-curr-sym">AED</div>
+            <div class="astr-curr-val" id="s-aed">—</div>
+          </div>
+          <div class="astr-curr-card eur">
+            <div class="astr-curr-sym">€ EUR</div>
+            <div class="astr-curr-val" id="s-eur">—</div>
+          </div>
+          <div class="astr-curr-card usd">
+            <div class="astr-curr-sym">$ USD</div>
+            <div class="astr-curr-val" id="s-usd">—</div>
+          </div>
+        </div>
       </div>
       <div class="table-toolbar">
         <input class="tbl-search" id="stock-search" placeholder="🔍 Cerca modello..." oninput="renderStock()">
@@ -689,6 +729,17 @@ header{box-shadow:0 1px 0 var(--border),0 2px 8px rgba(0,0,0,.04)}
     <div class="form-row">
       <div class="form-label">Nr Fattura *</div>
       <input class="form-input" id="sell-invoice" placeholder="es. 42/2026">
+    </div>
+    <div class="form-row">
+      <div class="form-label">Valuta vendita</div>
+      <div class="curr-radio-group">
+        <input type="radio" name="sell-curr" id="sc-aed" class="curr-radio" value="AED" checked>
+        <label for="sc-aed" class="curr-radio-label">AED</label>
+        <input type="radio" name="sell-curr" id="sc-eur" class="curr-radio" value="EUR">
+        <label for="sc-eur" class="curr-radio-label">€ EUR</label>
+        <input type="radio" name="sell-curr" id="sc-usd" class="curr-radio" value="USD">
+        <label for="sc-usd" class="curr-radio-label">$ USD</label>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-label">Cliente *</div>
@@ -977,6 +1028,14 @@ function renderAll() {
 // HELPERS
 // ══════════════════════════════════════════════════════
 
+function fmtK(v, currency) {
+  const n = parseFloat(v);
+  if (!n) return '—';
+  const syms = {AED:'AED ',EUR:'€',USD:'$'};
+  const sym = syms[currency] || '';
+  return sym + n.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:1}) + 'k';
+}
+
 function fmtDate(d) {
   if (!d) return '';
   const [y, m, g] = d.split('-');
@@ -1118,8 +1177,13 @@ function changeStato(machineId, val, sel) {
 function updateStockStats() {
   const se = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
   se('s-tot', db.macchine.length);
-  const tot = db.macchine.reduce((s,m) => s + (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0), 0);
-  se('s-val', tot ? '€' + Math.round(tot) + 'k' : '—');
+  const totAED = db.macchine.filter(m=>!m.currency||m.currency==='AED').reduce((s,m)=>s+(parseFloat(m.acq)||0)+(parseFloat(m.spe)||0),0);
+  const totEUR = db.macchine.filter(m=>m.currency==='EUR').reduce((s,m)=>s+(parseFloat(m.acq)||0)+(parseFloat(m.spe)||0),0);
+  const totUSD = db.macchine.filter(m=>m.currency==='USD').reduce((s,m)=>s+(parseFloat(m.acq)||0)+(parseFloat(m.spe)||0),0);
+  const fv = (v,sym) => v ? sym+v.toLocaleString('it-IT',{maximumFractionDigits:1})+'k' : '—';
+  se('s-aed', fv(totAED,''));
+  se('s-eur', fv(totEUR,''));
+  se('s-usd', fv(totUSD,''));
 }
 
 // ══════════════════════════════════════════════════════
@@ -1143,25 +1207,32 @@ function renderStock() {
     return;
   }
 
+  const CSYM = {AED:'AED',EUR:'€',USD:'$'};
   document.getElementById('stock-list').innerHTML = list.map((m,i) => {
     const tot = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
+    const curr = m.currency || 'AED';
+    const sym = CSYM[curr] || curr;
+    const fv = (v) => v ? sym+(parseFloat(v).toLocaleString('it-IT',{maximumFractionDigits:1}))+'k' : '—';
     return `<div class="scard" data-id="${m.id}">
       <div class="scard-top">
         <div class="scard-modello" onclick="editModello(this,'${m.id}')">${m.modello||''}</div>
-        <button class="info-btn" onclick="openDetail('${m.id}')">ⓘ</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="curr-badge ${curr.toLowerCase()}">${curr}</span>
+          <button class="info-btn" onclick="openDetail('${m.id}')">ⓘ</button>
+        </div>
       </div>
       <div class="scard-fields">
         <div class="sfield" onclick="editSfield(this,'${m.id}','acq','number')">
-          <div class="sf-label">Acquisto k€</div>
-          <div class="sf-val acc">${m.acq||'—'}</div>
+          <div class="sf-label">Acquisto</div>
+          <div class="sf-val acc">${fv(m.acq)}</div>
         </div>
         <div class="sfield" onclick="editSfield(this,'${m.id}','spe','number')">
-          <div class="sf-label">Spese k€</div>
-          <div class="sf-val">${m.spe||'—'}</div>
+          <div class="sf-label">Spese</div>
+          <div class="sf-val">${fv(m.spe)}</div>
         </div>
         <div class="sfield">
-          <div class="sf-label">Totale k€</div>
-          <div class="sf-val acc">${tot||'—'}</div>
+          <div class="sf-label">Totale</div>
+          <div class="sf-val acc">${fv(tot)}</div>
         </div>
         <div class="sfield" onclick="editSfield(this,'${m.id}','note','text')">
           <div class="sf-label">Note</div>
@@ -1184,7 +1255,8 @@ function handleAdd() {
     id: 'm' + Date.now(),
     modello: 'Nuovo modello',
     anno: '', ore: '', acq: 0, spe: 0,
-    stato: 'Disponibile', note: '', location: ''
+    stato: 'Disponibile', note: '', location: '',
+    currency: 'AED'
   };
   db.macchine.unshift(m);
   addLog('➕ Aggiunta macchina: ' + m.modello);
@@ -1946,7 +2018,19 @@ function openDetail(id) {
   const costo = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
   document.getElementById('dp-title').textContent = m.modello;
   document.getElementById('dp-sub').textContent = 'Costo totale: ' + fmtK(costo);
+  const mCurr = m.currency || 'AED';
   document.getElementById('dp-grid').innerHTML = `
+    <div class="dp-field" style="grid-column:1/-1">
+      <div class="dp-field-label">Valuta</div>
+      <div class="curr-radio-group" style="padding:4px 0">
+        <input type="radio" name="dp-curr-${id}" id="dpc-aed-${id}" class="curr-radio" value="AED" ${mCurr==='AED'?'checked':''} onchange="changeMachineCurr('${id}','AED')">
+        <label for="dpc-aed-${id}" class="curr-radio-label">AED</label>
+        <input type="radio" name="dp-curr-${id}" id="dpc-eur-${id}" class="curr-radio" value="EUR" ${mCurr==='EUR'?'checked':''} onchange="changeMachineCurr('${id}','EUR')">
+        <label for="dpc-eur-${id}" class="curr-radio-label">€ EUR</label>
+        <input type="radio" name="dp-curr-${id}" id="dpc-usd-${id}" class="curr-radio" value="USD" ${mCurr==='USD'?'checked':''} onchange="changeMachineCurr('${id}','USD')">
+        <label for="dpc-usd-${id}" class="curr-radio-label">$ USD</label>
+      </div>
+    </div>
     <div class="dp-field" onclick="editDetailField(this,'${id}','anno','number')">
       <div class="dp-field-label">Anno</div>
       <div class="dp-field-val">${m.anno||'—'}</div>
@@ -1979,6 +2063,14 @@ function openDetail(id) {
   document.getElementById('detail-overlay').classList.add('open');
 }
 
+
+function changeMachineCurr(id, currency) {
+  const m = db.macchine.find(x => x.id === id); if (!m) return;
+  m.currency = currency;
+  renderStock();
+  save();
+}
+
 function closeDetail() {
   document.getElementById('detail-overlay').classList.remove('open');
   detailId = null;
@@ -2001,25 +2093,6 @@ document.getElementById('detail-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('detail-overlay')) closeDetail();
 });
 
-
-// ── CURRENCY ──────────────────────────────────────────────
-const CURRENCY_SYMBOLS = { AED: 'AED ', EUR: '€', USD: '$' };
-let currentCurrency = 'AED';
-
-function setCurrency(code, btn) {
-  currentCurrency = code;
-  document.querySelectorAll('.curr-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderAll();
-}
-
-// Override fmtK to use current currency
-function fmtK(v) {
-  const n = parseFloat(v);
-  if (!n) return '—';
-  const sym = CURRENCY_SYMBOLS[currentCurrency] || currentCurrency + ' ';
-  return sym + n.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:1}) + 'k';
-}
 
 let toastTimer;
 function toast(msg, type='') {
