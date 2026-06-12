@@ -862,11 +862,11 @@ header{box-shadow:0 1px 0 var(--border),0 2px 8px rgba(0,0,0,.04)}
     <div class="form-row">
       <div class="form-label">Valuta vendita</div>
       <div class="curr-radio-group">
-        <input type="radio" name="sell-curr" id="sc-aed" class="curr-radio" value="AED" checked>
+        <input type="radio" name="sell-curr" id="sc-aed" class="curr-radio" value="AED" checked onchange="updateMarginPreview()">
         <label for="sc-aed" class="curr-radio-label">AED</label>
-        <input type="radio" name="sell-curr" id="sc-eur" class="curr-radio" value="EUR">
+        <input type="radio" name="sell-curr" id="sc-eur" class="curr-radio" value="EUR" onchange="updateMarginPreview()">
         <label for="sc-eur" class="curr-radio-label">€ EUR</label>
-        <input type="radio" name="sell-curr" id="sc-usd" class="curr-radio" value="USD">
+        <input type="radio" name="sell-curr" id="sc-usd" class="curr-radio" value="USD" onchange="updateMarginPreview()">
         <label for="sc-usd" class="curr-radio-label">$ USD</label>
       </div>
     </div>
@@ -1177,6 +1177,7 @@ async function loadFromStorage() {
     renderAll();
     _committed = JSON.stringify(db); _undo = []; _redo = []; updateUndoButtons();
     if (typeof maybeSnapshot === 'function') maybeSnapshot();
+    if (typeof fetchRates === 'function') fetchRates();
     toast('\u2713 Caricato', 'ok');
   } catch(e) {
     console.error('Load error:', e);
@@ -1594,6 +1595,30 @@ const _SYM = {AED:'AED ',EUR:'€ ',USD:'$ '};
 function kfmt(k, cur){ return (_SYM[cur]||((cur||'')+' ')) + (Math.round((parseFloat(k)||0)*10)/10) + 'k'; }
 function fmtSpDate(iso){ if(!iso) return ''; const d=new Date(iso); return isNaN(d)?'':d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 
+// ── FX RATES (base USD). AED pegged to USD (fixed), EUR fetched daily ──
+const AED_PEG = 3.6725; // 1 USD = 3.6725 AED (fixed peg)
+window._FX = { USD:1, AED:AED_PEG, EUR:0.92 }; // safe fallback until fetched
+async function fetchRates(){
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    if (db && db._rates && db._rates.date===today && db._rates.fx) { window._FX = db._rates.fx; return; }
+    const r = await fetch('https://open.er-api.com/v6/latest/USD', { cache:'no-store' });
+    const j = await r.json();
+    if (j && j.rates && j.rates.EUR) {
+      window._FX = { USD:1, AED: j.rates.AED || AED_PEG, EUR: j.rates.EUR };
+      if (db) { db._rates = { date: today, fx: window._FX }; }
+      if (typeof renderFatture==='function') renderFatture();
+    }
+  } catch(e){ console.warn('Cambio valuta non aggiornato, uso ultimo disponibile', e); if (db && db._rates && db._rates.fx) window._FX = db._rates.fx; }
+}
+function fxRate(from, to){
+  if (!from || !to || from===to) return 1;
+  const R = window._FX || { USD:1, AED:AED_PEG, EUR:0.92 };
+  const rf = R[from]||1, rt = R[to]||1; // both relative to USD
+  return rt / rf;
+}
+function convert(amt, from, to){ return (parseFloat(amt)||0) * fxRate(from, to); }
+
 // ════════ SPESE (per machine, machine currency) ════════
 let _speseMid = null;
 function openSpese(mid){
@@ -1674,26 +1699,50 @@ function renderReport(){
   const f = db.fatture.find(x=>x.id===_reportId); if(!f) return;
   if(!Array.isArray(f.speseList)) f.speseList=[];
   recalcFatturaSpese(f);
-  const cur = f.currency||'AED';
-  const acq=parseFloat(f.acq)||0, spe=parseFloat(f.spe)||0, vend=parseFloat(f.importo)||0, mar=vend-acq-spe, pos=mar>=0;
+  const sellCur = f.currency||'AED';
+  const acqCur = f.acqCurrency || sellCur;
+  const acq=parseFloat(f.acq)||0, spe=parseFloat(f.spe)||0, vend=parseFloat(f.importo)||0;
+  const costAcq = acq + spe;                                  // in acqCur
+  const rate = (f.acqCurrency && f.fxRate) ? f.fxRate : fxRate(acqCur, sellCur);
+  const costSell = costAcq * rate;                            // converted to sellCur
+  const mar = vend - costSell, pos = mar>=0;
   document.getElementById('report-title').textContent='📊 Report vendita';
-  let h = `<div style="font-size:.85rem;color:var(--orange);font-weight:700;margin-bottom:10px">Fattura ${f.nr} — ${(f.brand||'')+' '+(f.model||f.modello||'')} — ${f.cliente||''} — ${cur}</div>`;
-  h += reportRow('Prezzo di acquisto', kfmt(acq,cur));
-  h += `<div style="margin:10px 0 4px;font-weight:700;color:var(--orange)">Spese</div>`;
+  let h = `<div style="font-size:.85rem;color:var(--orange);font-weight:700;margin-bottom:10px">Fattura ${f.nr} — ${(f.brand||'')+' '+(f.model||f.modello||'')} — ${f.cliente||''}</div>`;
+
+  // purchase currency selector
+  h += `<div class="form-row" style="margin-bottom:10px">
+    <div class="form-label">Valuta di acquisto</div>
+    <select class="form-input" onchange="setReportAcqCur(this.value)">
+      ${['AED','EUR','USD'].map(c=>`<option value="${c}" ${c===acqCur?'selected':''}>${c}</option>`).join('')}
+    </select>
+  </div>`;
+
+  h += reportRow('Prezzo di acquisto', kfmt(acq, acqCur));
+  h += `<div style="margin:10px 0 4px;font-weight:700;color:var(--orange)">Spese (${acqCur})</div>`;
   h += f.speseList.length ? f.speseList.map(s=>`
     <div class="spesa-row" data-sid="${s.id}">
       <span class="spesa-date">${fmtSpDate(s.data)}</span>
       <input class="form-input spesa-desc" value="${escapeHtml(s.testo)}" placeholder="Descrizione" oninput="updateSpesaFattura('${s.id}','testo',this.value)">
-      <div class="spesa-imp"><input class="form-input" type="number" step="0.5" value="${s.importo||''}" placeholder="es. 2" oninput="updateSpesaFattura('${s.id}','importo',this.value)"><span>${cur} k</span></div>
+      <div class="spesa-imp"><input class="form-input" type="number" step="0.5" value="${s.importo||''}" placeholder="es. 2" oninput="updateSpesaFattura('${s.id}','importo',this.value)"><span>${acqCur} k</span></div>
       <button class="cli-del" onclick="deleteSpesaFattura('${s.id}')">🗑</button>
     </div>`).join('') : '<div style="font-size:.8rem;color:var(--muted);padding:4px 0">Nessuna spesa.</div>';
   h += `<button class="add-wide" style="margin-top:8px" onclick="addSpesaFattura()">＋ Aggiungi spesa</button>`;
-  h += reportRow('Totale spese', kfmt(spe,cur), {border:true});
-  h += reportRow('Costo totale', kfmt(acq+spe,cur), {bold:true});
-  h += reportRow('Prezzo di vendita', kfmt(vend,cur), {border:true, bold:true});
+  h += reportRow('Costo totale', kfmt(costAcq, acqCur), {bold:true});
+  if (acqCur !== sellCur) {
+    h += reportRow('Cambio ' + acqCur + '→' + sellCur, rate.toFixed(4));
+    h += reportRow('Costo convertito', kfmt(costSell, sellCur), {border:true, color:'#8a6d00'});
+  }
+  h += reportRow('Prezzo di vendita', kfmt(vend, sellCur), {border:true, bold:true});
   h += reportRow('Venduta a', f.cliente||'—');
-  h += reportRow('Margine', (pos?'+':'')+kfmt(mar,cur), {bold:true, border:true, color: pos?'#1f7a4d':'#b23b3b'});
+  h += reportRow('Margine (' + sellCur + ')', (pos?'+':'')+kfmt(mar, sellCur), {bold:true, border:true, color: pos?'#1f7a4d':'#b23b3b'});
+  if (acqCur !== sellCur) h += `<div style="font-size:.74rem;color:var(--muted);margin-top:8px">Margine convertito da ${acqCur} a ${sellCur} al cambio ${rate.toFixed(4)} ${(f.acqCurrency&&f.fxRate)?"(bloccato all'emissione)":"(cambio odierno)"}.</div>`;
   document.getElementById('report-body').innerHTML = h;
+}
+function setReportAcqCur(c){
+  const f = db.fatture.find(x=>x.id===_reportId); if(!f) return;
+  f.acqCurrency = c;
+  f.fxRate = fxRate(c, f.currency||'AED');   // lock today's rate for this pairing
+  renderReport(); save();
 }
 function addSpesaFattura(){
   const f=db.fatture.find(x=>x.id===_reportId); if(!f) return;
@@ -1833,10 +1882,14 @@ function openSell(id) {
 function closeSellModal() { document.getElementById('sell-overlay').classList.remove('open'); }
 
 function updateMarginPreview() {
-  const m = db.macchine.find(x => x.id === sellId);
-  if (!m) return;
-  const costo = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);
-  const vend = parseFloat(document.getElementById('sell-price').value) || 0;
+  const m = sellId ? db.macchine.find(x => x.id === sellId) : null;
+  if (!m) { document.getElementById('margin-preview').style.display = 'none'; return; }
+  const acqCur = m.currency || 'AED';
+  const curEl = document.querySelector('input[name="sell-curr"]:checked');
+  const sellCur = curEl ? curEl.value : acqCur;
+  const costoAcq = (parseFloat(m.acq)||0) + (parseFloat(m.spe)||0);     // in acqCur
+  const costo = convert(costoAcq, acqCur, sellCur);                     // in sellCur
+  const vend = parseFloat(document.getElementById('sell-price').value) || 0; // in sellCur
   if (!vend) { document.getElementById('margin-preview').style.display = 'none'; return; }
   const mar = vend - costo, pct = costo > 0 ? ((mar/costo)*100).toFixed(1) : 0, isPos = mar >= 0;
   const prev = document.getElementById('margin-preview');
@@ -1844,8 +1897,9 @@ function updateMarginPreview() {
   prev.className = 'margin-preview' + (isPos ? '' : ' neg');
   document.getElementById('margin-val').className = 'margin-value' + (isPos ? '' : ' neg');
   document.getElementById('margin-pct').className = 'margin-pct' + (isPos ? '' : ' neg');
-  document.getElementById('margin-val').textContent = (isPos ? '+' : '') + fmtK(mar);
-  document.getElementById('margin-pct').textContent = (isPos ? '+' : '') + pct + '% sul costo';
+  document.getElementById('margin-val').textContent = (isPos ? '+' : '') + kfmt(mar, sellCur);
+  const note = acqCur !== sellCur ? ' (costo convertito ' + acqCur + '→' + sellCur + ' @ ' + fxRate(acqCur,sellCur).toFixed(4) + ')' : '';
+  document.getElementById('margin-pct').textContent = (isPos ? '+' : '') + pct + '% sul costo' + note;
 }
 
 function confirmSell() {
@@ -1878,6 +1932,8 @@ function confirmSell() {
     tipo: 'vendita',
     commissioni: comm,
     purposeCode: comm ? 'COM' : '',
+    acqCurrency: m ? (m.currency || 'AED') : currency,
+    fxRate: m ? fxRate(m.currency || 'AED', currency) : 1,
     modello: m ? m.modello : document.getElementById('sell-model').value.trim(),
     brand: document.getElementById('sell-brand').value.trim(),
     model: document.getElementById('sell-model').value.trim(),
